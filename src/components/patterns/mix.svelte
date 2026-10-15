@@ -18,14 +18,19 @@
 	import { Range } from "@/classes/range";
 	import { Color, Float, Uint } from "@/classes/controls";
 	import { RendererContext } from "@/classes/renderer_context";
-	import { color_input, range_input } from "@/components/controls.svelte";
+	import {
+		checkbox_input,
+		color_input,
+		range_input,
+	} from "@/components/controls.svelte";
 	import { create_renderer } from "@/attachments/create_renderer";
 	import { create_resize_renderer } from "@/functions/create_resize_renderer";
-	import { screenSize, uv } from "three/tsl";
+	import { uv } from "three/tsl";
+	import { Mesh } from "@/classes/mesh";
+	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+	import { controls } from "@/attachments/controls";
 
-	const aspect = screenSize.div(screenSize.x.min(screenSize.y));
-
-	const transformed_uv = uv().sub(0.5).mul(aspect);
+	const transformed_uv = uv().sub(0.5);
 
 	const frequency = new Uint(Math.floor(frequency_range.midpoint));
 	const edge = new Float(edge_range.midpoint);
@@ -48,11 +53,18 @@
 			.mix(color_a.node, color_b.node),
 	});
 
-	const quad = new three.QuadMesh(material);
+	const geometry = new three.SphereGeometry();
+	const mesh = new Mesh(material, geometry);
+
+	const axis = new three.Vector3(1, 1, 2).normalize();
+	const camera = new three.PerspectiveCamera().translateOnAxis(axis, 4);
+	const orbit = new OrbitControls(camera);
+	const render = (renderer: three.Renderer) => mesh.render(renderer, camera);
 
 	const context = new RendererContext();
-
-	const render = (renderer: three.Renderer) => quad.render(renderer);
+	orbit.addEventListener("change", () => {
+		context.if_renderer(render);
+	});
 
 	const update =
 		<T,>(update: (value: T) => void) =>
@@ -92,11 +104,20 @@
 			() => color_b.value,
 			update((value) => color_b.update(value)),
 		)}
+		{@render checkbox_input(
+			"quad",
+			() => mesh.render_quad,
+			update((value) => {
+				mesh.render_quad = value;
+				orbit.enabled = !value;
+			}),
+		)}
 	</fieldset>
 
 	<canvas
 		class="aspect-square"
 		bind:contentBoxSize={null, create_resize_renderer(context, render)}
+		{@attach controls(orbit)}
 		{@attach create_renderer(context, render)}
 	>
 	</canvas>

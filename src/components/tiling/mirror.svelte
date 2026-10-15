@@ -14,6 +14,9 @@
 	import { create_renderer } from "@/attachments/create_renderer";
 	import { create_resize_renderer } from "@/functions/create_resize_renderer";
 	import { uv } from "three/tsl";
+	import { Mesh } from "@/classes/mesh";
+	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+	import { controls } from "@/attachments/controls";
 
 	const tile_count = new Uint(Math.floor(tile_count_range.midpoint));
 	const mirror = new Bool(true);
@@ -24,11 +27,19 @@
 	const material = new three.MeshBasicNodeMaterial({
 		colorNode: mirror.node.select(mirrored, p.fract()),
 	});
-	const quad = new three.QuadMesh(material);
+
+	const geometry = new three.TorusGeometry();
+	const mesh = new Mesh(material, geometry);
+
+	const axis = new three.Vector3(1, 1, 2).normalize();
+	const camera = new three.PerspectiveCamera().translateOnAxis(axis, 4);
+	const orbit = new OrbitControls(camera);
+	const render = (renderer: three.Renderer) => mesh.render(renderer, camera);
 
 	const context = new RendererContext();
-
-	const render = (renderer: three.Renderer) => quad.render(renderer);
+	orbit.addEventListener("change", () => {
+		context.if_renderer(render);
+	});
 
 	const update =
 		<T,>(update: (value: T) => void) =>
@@ -51,11 +62,20 @@
 			() => mirror.value,
 			update((value) => mirror.update(value)),
 		)}
+		{@render checkbox_input(
+			"quad",
+			() => mesh.render_quad,
+			update((value) => {
+				mesh.render_quad = value;
+				orbit.enabled = !value;
+			}),
+		)}
 	</fieldset>
 
 	<canvas
 		class="aspect-square"
 		bind:contentBoxSize={null, create_resize_renderer(context, render)}
+		{@attach controls(orbit)}
 		{@attach create_renderer(context, render)}
 	>
 	</canvas>

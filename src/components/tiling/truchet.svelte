@@ -14,19 +14,20 @@
 
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Range } from "@/classes/range";
 	import { Bool, Color, Float, Uint } from "@/classes/controls/index";
+	import { Mesh } from "@/classes/mesh";
+	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+	import { Range } from "@/classes/range";
 	import { RendererContext } from "@/classes/renderer_context";
 	import {
 		checkbox_input,
 		color_input,
 		range_input,
 	} from "@/components/controls.svelte";
+	import { controls } from "@/attachments/controls";
 	import { create_renderer } from "@/attachments/create_renderer";
 	import { create_resize_renderer } from "@/functions/create_resize_renderer";
-	import { screenSize, uv, vec2 } from "three/tsl";
-	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-	import { Mesh } from "@/classes/mesh";
+	import { uv, vec2 } from "three/tsl";
 
 	const tile_count = new Uint(Math.floor(tile_count_range.midpoint));
 	const color_a = new Color("#d8a521");
@@ -35,9 +36,7 @@
 	const r = new Float(radius_range.midpoint);
 	const show_grid = new Bool(false);
 
-	const aspect = screenSize.div(screenSize.x.min(screenSize.y));
-
-	const t_uv = uv().mul(tile_count.node).mul(aspect);
+	const t_uv = uv().mul(tile_count.node).mul(1);
 
 	const tile_uv = t_uv.fract().sub(0.5);
 	const tile_index = t_uv.floor();
@@ -68,10 +67,6 @@
 		)
 		.mix(color_a.node, color_b.node);
 
-	const axis = new three.Vector3(1, 1, 2).normalize();
-	const camera = new three.PerspectiveCamera().translateOnAxis(axis, 4);
-	const orbit = new OrbitControls(camera);
-
 	const material = new three.MeshBasicNodeMaterial({
 		colorNode: show_grid.node.select(
 			border.mix(truchet, color_tile_border.node),
@@ -81,13 +76,15 @@
 	const geometry = new three.TorusGeometry();
 	const mesh = new Mesh(material, geometry);
 
+	const axis = new three.Vector3(1, 1, 2).normalize();
+	const camera = new three.PerspectiveCamera().translateOnAxis(axis, 4);
+	const orbit = new OrbitControls(camera);
 	const render = (renderer: three.Renderer) => mesh.render(renderer, camera);
 
+	const context = new RendererContext();
 	orbit.addEventListener("change", () => {
 		context.if_renderer(render);
 	});
-
-	const context = new RendererContext();
 
 	const update =
 		<T,>(update: (value: T) => void) =>
@@ -135,20 +132,16 @@
 			"quad",
 			() => mesh.render_quad,
 			update((value) => {
-				mesh.render_quad = orbit.enabled = value;
+				mesh.render_quad = value;
+				orbit.enabled = !value;
 			}),
 		)}
 	</fieldset>
 
 	<canvas
 		class="aspect-square"
-		{@attach (canvas) => {
-			orbit.connect(canvas);
-			return () => {
-				orbit.disconnect();
-			};
-		}}
 		bind:contentBoxSize={null, create_resize_renderer(context, render)}
+		{@attach controls(orbit)}
 		{@attach create_renderer(context, render)}
 	>
 	</canvas>

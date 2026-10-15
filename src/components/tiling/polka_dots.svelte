@@ -16,12 +16,19 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
 	import { Color, Float, Uint } from "@/classes/controls/index";
+	import { Mesh } from "@/classes/mesh";
+	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 	import { Range } from "@/classes/range";
 	import { RendererContext } from "@/classes/renderer_context";
-	import { color_input, range_input } from "@/components/controls.svelte";
+	import {
+		checkbox_input,
+		color_input,
+		range_input,
+	} from "@/components/controls.svelte";
+	import { controls } from "@/attachments/controls";
 	import { create_renderer } from "@/attachments/create_renderer";
 	import { create_resize_renderer } from "@/functions/create_resize_renderer";
-	import { screenSize, uv, vec2 } from "three/tsl";
+	import { uv, vec2 } from "three/tsl";
 
 	const tile_count = new Uint(Math.floor(tile_count_range.midpoint));
 	const radius = new Float(Math.floor(radius_range.midpoint));
@@ -29,9 +36,7 @@
 	const background_color = new Color("#125a8d");
 	const offset = new Float(offset_range.max);
 
-	const aspect = screenSize.div(screenSize.x.min(screenSize.y));
-
-	const transformed_uv = uv().mul(aspect).mul(tile_count.node);
+	const transformed_uv = uv().mul(tile_count.node);
 
 	const tile_index = transformed_uv.floor();
 
@@ -52,11 +57,20 @@
 	const material = new three.MeshBasicNodeMaterial({
 		colorNode: circle.mix(dot_color.node, background_color.node),
 	});
-	const quad = new three.QuadMesh(material);
 
 	const context = new RendererContext();
 
-	const render = (renderer: three.Renderer) => quad.render(renderer);
+	const geometry = new three.TorusGeometry();
+	const mesh = new Mesh(material, geometry);
+
+	const axis = new three.Vector3(1, 1, 2).normalize();
+	const camera = new three.PerspectiveCamera().translateOnAxis(axis, 4);
+	const orbit = new OrbitControls(camera);
+	orbit.addEventListener("change", () => {
+		context.if_renderer(render);
+	});
+
+	const render = (renderer: three.Renderer) => mesh.render(renderer, camera);
 
 	const update =
 		<T,>(update: (value: T) => void) =>
@@ -96,11 +110,20 @@
 			() => background_color.value,
 			update((value) => background_color.update(value)),
 		)}
+		{@render checkbox_input(
+			"quad",
+			() => mesh.render_quad,
+			update((value) => {
+				mesh.render_quad = value;
+				orbit.enabled = !value;
+			}),
+		)}
 	</fieldset>
 
 	<canvas
 		class="aspect-square"
 		bind:contentBoxSize={null, create_resize_renderer(context, render)}
+		{@attach controls(orbit)}
 		{@attach create_renderer(context, render)}
 	>
 	</canvas>
