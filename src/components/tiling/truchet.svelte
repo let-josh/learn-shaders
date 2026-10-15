@@ -26,6 +26,7 @@
 	import { create_resize_renderer } from "@/functions/create_resize_renderer";
 	import { screenSize, uv, vec2 } from "three/tsl";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+	import { Mesh } from "@/classes/mesh";
 
 	const tile_count = new Uint(Math.floor(tile_count_range.midpoint));
 	const color_a = new Color("#d8a521");
@@ -67,27 +68,24 @@
 		)
 		.mix(color_a.node, color_b.node);
 
-	const colorNode = show_grid.node.select(
-		border.mix(truchet, color_tile_border.node),
-		truchet,
-	);
-
-	const material = new three.MeshBasicNodeMaterial({
-		colorNode,
-	});
-	const quad = new three.QuadMesh(material);
-	const mesh = new three.Mesh(new three.TorusGeometry(), material);
 	const axis = new three.Vector3(1, 1, 2).normalize();
 	const camera = new three.PerspectiveCamera().translateOnAxis(axis, 4);
 	const orbit = new OrbitControls(camera);
 
+	const material = new three.MeshBasicNodeMaterial({
+		colorNode: show_grid.node.select(
+			border.mix(truchet, color_tile_border.node),
+			truchet,
+		),
+	});
+	const geometry = new three.TorusGeometry();
+	const mesh = new Mesh(material, geometry);
+
+	const render = (renderer: three.Renderer) => mesh.render(renderer, camera);
+
 	orbit.addEventListener("change", () => {
 		context.if_renderer(render);
 	});
-
-	let scene = true;
-	const render = (renderer: three.Renderer) =>
-		scene ? renderer.render(mesh, camera) : quad.render(renderer);
 
 	const context = new RendererContext();
 
@@ -134,10 +132,10 @@
 			update((value) => color_tile_border.update(value)),
 		)}
 		{@render checkbox_input(
-			"scene",
-			() => scene,
+			"quad",
+			() => mesh.render_quad,
 			update((value) => {
-				scene = orbit.enabled = value;
+				mesh.render_quad = orbit.enabled = value;
 			}),
 		)}
 	</fieldset>
