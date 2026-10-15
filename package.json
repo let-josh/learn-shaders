@@ -1,0 +1,31 @@
+{
+	"name": "learn-shaders",
+	"type": "module",
+	"version": "0.0.1",
+	"scripts": {
+		"dev": "astro dev",
+		"start": "astro dev",
+		"build": "astro build",
+		"preview": "astro preview",
+		"astro": "astro"
+	},
+	"dependencies": {
+		"@astrojs/starlight": "^0.42.6",
+		"@astrojs/starlight-tailwind": "^5.0.0",
+		"@astrojs/svelte": "^9.0.1",
+		"@tailwindcss/vite": "^4.2.4",
+		"astro": "^7.2.10",
+		"sharp": "^0.35.3",
+		"svelte": "^5.57.2",
+		"tailwindcss": "^4.2.4",
+		"three": "^0.186.1",
+		"typescript": "^6.0.3"
+	},
+	"devDependencies": {
+		"@types/three": "^0.186.0",
+		"prettier": "^3.9.10",
+		"prettier-plugin-astro": "^1.1.1",
+		"prettier-plugin-svelte": "^4.1.1",
+		"prettier-plugin-tailwindcss": "^0.8.1"
+	}
+}
