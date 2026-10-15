@@ -5,16 +5,23 @@ import tailwindcss from "@tailwindcss/vite";
 
 import svelte from "@astrojs/svelte";
 
+const site = "https://let-josh.github.io";
+
+const base = "/learn-shaders";
+
+const repo_url = "https://github.com/let-josh" + base;
+
 // https://astro.build/config
 export default defineConfig({
+	base,
 	integrations: [
 		starlight({
-			title: "Docs with Tailwind",
+			title: "Learn Shaders",
 			social: [
 				{
 					icon: "github",
 					label: "GitHub",
-					href: "https://github.com/withastro/starlight",
+					href: repo_url,
 				},
 			],
 			sidebar: [
@@ -53,6 +60,7 @@ export default defineConfig({
 		}),
 		svelte(),
 	],
+	site,
 	vite: {
 		plugins: [tailwindcss()],
 	},
