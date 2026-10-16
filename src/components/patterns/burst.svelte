@@ -20,15 +20,15 @@
 		range_input,
 	} from "@/components/controls.svelte";
 	import { create_renderer } from "@/attachments/create_renderer";
-	import { create_resize_renderer } from "@/functions/create_resize_renderer";
 	import { uv } from "three/tsl";
 	import { Mesh } from "@/classes/mesh";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 	import { controls } from "@/attachments/controls";
+	import { resize_renderer } from "@/functions/resize_renderer";
 
 	const transformed_uv = uv().sub(0.5);
 
-	const frequency = new Uint(Math.floor(frequency_range.midpoint));
+	const frequency = new Uint(Math.floor(frequency_range.midpoint) + 1);
 	const edge = new Float(edge_range.midpoint);
 	const color_a = new Color("#d8a521");
 	const color_b = new Color("#125a8d");
@@ -99,9 +99,26 @@
 
 	<canvas
 		class="aspect-square"
-		bind:contentBoxSize={null, create_resize_renderer(context, render)}
+		bind:contentBoxSize={
+			null,
+			([size]: ResizeObserverSize[]) => {
+				context.if_renderer((renderer) => {
+					resize_renderer(renderer, size.inlineSize, size.blockSize);
+					render(renderer);
+				});
+			}
+		}
 		{@attach controls(orbit)}
-		{@attach create_renderer(context, render)}
+		{@attach create_renderer((renderer) => {
+			render(renderer);
+			const canvas = renderer.domElement;
+			resize_renderer(renderer, canvas.clientWidth, canvas.clientHeight);
+			const last = context.renderer;
+			context.renderer = renderer;
+			return () => {
+				context.renderer = last;
+			};
+		})}
 	>
 	</canvas>
 </div>

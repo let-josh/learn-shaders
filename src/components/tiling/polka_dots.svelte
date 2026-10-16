@@ -27,7 +27,7 @@
 	} from "@/components/controls.svelte";
 	import { controls } from "@/attachments/controls";
 	import { create_renderer } from "@/attachments/create_renderer";
-	import { create_resize_renderer } from "@/functions/create_resize_renderer";
+	import { resize_renderer } from "@/functions/resize_renderer";
 	import { uv, vec2 } from "three/tsl";
 
 	const tile_count = new Uint(Math.floor(tile_count_range.midpoint));
@@ -122,9 +122,26 @@
 
 	<canvas
 		class="aspect-square"
-		bind:contentBoxSize={null, create_resize_renderer(context, render)}
+		bind:contentBoxSize={
+			null,
+			([size]: ResizeObserverSize[]) => {
+				context.if_renderer((renderer) => {
+					resize_renderer(renderer, size.inlineSize, size.blockSize);
+					render(renderer);
+				});
+			}
+		}
 		{@attach controls(orbit)}
-		{@attach create_renderer(context, render)}
+		{@attach create_renderer((renderer) => {
+			render(renderer);
+			const canvas = renderer.domElement;
+			resize_renderer(renderer, canvas.clientWidth, canvas.clientHeight);
+			const last = context.renderer;
+			context.renderer = renderer;
+			return () => {
+				context.renderer = last;
+			};
+		})}
 	>
 	</canvas>
 </div>
