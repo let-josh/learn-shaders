@@ -66,11 +66,17 @@
 	const axis = new three.Vector3(1, 1, 2).normalize();
 	const camera = new three.PerspectiveCamera().translateOnAxis(axis, 4);
 	const orbit = new OrbitControls(camera);
-	orbit.addEventListener("change", () => {
-		context.if_renderer(render);
-	});
 
 	const render = (renderer: three.Renderer) => mesh.render(renderer, camera);
+
+	const resize_and_render = (
+		renderer: three.Renderer,
+		width: number,
+		height: number,
+	) => {
+		resize_renderer(renderer, width, height);
+		render(renderer);
+	};
 
 	const update =
 		<T,>(update: (value: T) => void) =>
@@ -121,24 +127,27 @@
 	</fieldset>
 
 	<canvas
-		class="aspect-square"
+		class="aspect-square w-full"
 		bind:contentBoxSize={
 			null,
 			([size]: ResizeObserverSize[]) => {
 				context.if_renderer((renderer) => {
-					resize_renderer(renderer, size.inlineSize, size.blockSize);
-					render(renderer);
+					resize_and_render(renderer, size.inlineSize, size.blockSize);
 				});
 			}
 		}
 		{@attach controls(orbit)}
 		{@attach create_renderer((renderer) => {
-			render(renderer);
 			const canvas = renderer.domElement;
-			resize_renderer(renderer, canvas.clientWidth, canvas.clientHeight);
+			resize_and_render(renderer, canvas.clientWidth, canvas.clientHeight);
 			const last = context.renderer;
 			context.renderer = renderer;
+
+			const on_change = () => render(renderer);
+
+			orbit.addEventListener("change", on_change);
 			return () => {
+				orbit.removeEventListener("change", on_change);
 				context.renderer = last;
 			};
 		})}

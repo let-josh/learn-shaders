@@ -8,9 +8,11 @@ const resize_renderer = (
 	update_style = false,
 ) => {
 	const dpr = devicePixelRatio.current ?? 1;
-	width = Math.round(width * dpr);
-	height = Math.round(height * dpr);
-	renderer.setSize(width, height, update_style);
+	renderer.setSize(
+		Math.floor(width * dpr),
+		Math.floor(height * dpr),
+		update_style,
+	);
 };
 
 export { resize_renderer };

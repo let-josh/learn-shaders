@@ -17,6 +17,15 @@
 	const context = new RendererContext();
 
 	const render = (renderer: three.Renderer) => quad.render(renderer);
+
+	const resize_and_render = (
+		renderer: three.Renderer,
+		width: number,
+		height: number,
+	) => {
+		resize_renderer(renderer, width, height);
+		render(renderer);
+	};
 </script>
 
 <div class="relative">
@@ -26,26 +35,24 @@
 			() => color.value,
 			(value) => {
 				color.update(value);
-				context.if_renderer((renderer) => quad.render(renderer));
+				context.if_renderer(render);
 			},
 		)}
 	</fieldset>
 
 	<canvas
-		class="aspect-square"
+		class="aspect-square w-full"
 		bind:contentBoxSize={
 			null,
 			([size]: ResizeObserverSize[]) => {
-				context.if_renderer((renderer) => {
-					resize_renderer(renderer, size.inlineSize, size.blockSize);
-					render(renderer);
-				});
+				context.if_renderer((renderer) =>
+					resize_and_render(renderer, size.inlineSize, size.blockSize),
+				);
 			}
 		}
 		{@attach create_renderer((renderer) => {
-			render(renderer);
 			const canvas = renderer.domElement;
-			resize_renderer(renderer, canvas.clientWidth, canvas.clientHeight);
+			resize_and_render(renderer, canvas.clientWidth, canvas.clientWidth);
 			const last = context.renderer;
 			context.renderer = renderer;
 			return () => {

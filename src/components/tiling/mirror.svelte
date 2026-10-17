@@ -37,9 +37,15 @@
 	const render = (renderer: three.Renderer) => mesh.render(renderer, camera);
 
 	const context = new RendererContext();
-	orbit.addEventListener("change", () => {
-		context.if_renderer(render);
-	});
+
+	const resize_and_render = (
+		renderer: three.Renderer,
+		width: number,
+		height: number,
+	) => {
+		resize_renderer(renderer, width, height);
+		render(renderer);
+	};
 
 	const update =
 		<T,>(update: (value: T) => void) =>
@@ -73,24 +79,27 @@
 	</fieldset>
 
 	<canvas
-		class="aspect-square"
+		class="aspect-square w-full"
 		bind:contentBoxSize={
 			null,
 			([size]: ResizeObserverSize[]) => {
-				context.if_renderer((renderer) => {
-					resize_renderer(renderer, size.inlineSize, size.blockSize);
-					render(renderer);
-				});
+				context.if_renderer((renderer) =>
+					resize_and_render(renderer, size.inlineSize, size.blockSize),
+				);
 			}
 		}
 		{@attach controls(orbit)}
 		{@attach create_renderer((renderer) => {
-			render(renderer);
 			const canvas = renderer.domElement;
-			resize_renderer(renderer, canvas.clientWidth, canvas.clientHeight);
+			resize_and_render(renderer, canvas.clientWidth, canvas.clientHeight);
 			const last = context.renderer;
 			context.renderer = renderer;
+
+			const on_change = () => render(renderer);
+			orbit.addEventListener("change", on_change);
+
 			return () => {
+				orbit.removeEventListener("change", on_change);
 				context.renderer = last;
 			};
 		})}

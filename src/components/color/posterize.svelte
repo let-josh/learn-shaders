@@ -86,7 +86,7 @@
 	</fieldset>
 
 	<canvas
-		class="aspect-square"
+		class="aspect-square w-full"
 		bind:contentBoxSize={
 			null,
 			([size]: ResizeObserverSize[]) => {
@@ -97,9 +97,9 @@
 			}
 		}
 		{@attach create_renderer((renderer) => {
-			render(renderer);
 			const canvas = renderer.domElement;
 			resize_renderer(renderer, canvas.clientWidth, canvas.clientHeight);
+			render(renderer);
 			const last = context.renderer;
 			context.renderer = renderer;
 			return () => {
