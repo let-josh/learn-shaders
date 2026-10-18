@@ -79,10 +79,9 @@
 	const axis = new three.Vector3(1, 1, 2).normalize();
 	const camera = new three.PerspectiveCamera().translateOnAxis(axis, 4);
 	const orbit = new OrbitControls(camera);
+	orbit.enabled = mesh.render_scene;
 
-	const render = (renderer: three.Renderer) => {
-		mesh.render(renderer, camera);
-	};
+	const render = (renderer: three.Renderer) => mesh.render(renderer, camera);
 
 	const resize_and_render = (
 		renderer: three.Renderer,
@@ -138,11 +137,11 @@
 			update((value) => color_tile_border.update(value)),
 		)}
 		{@render checkbox_input(
-			"quad",
-			() => mesh.render_quad,
+			"render scene",
+			() => mesh.render_scene,
 			update((value) => {
-				mesh.render_quad = value;
-				orbit.enabled = !value;
+				mesh.render_scene = value;
+				orbit.enabled = value;
 			}),
 		)}
 	</fieldset>
