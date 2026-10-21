@@ -1,4 +1,4 @@
-import { uniform } from 'three/tsl';
+import { uniform } from "three/tsl";
 
 class Bool {
 	#value;
@@ -10,7 +10,7 @@ class Bool {
 	get value() {
 		return this.#value;
 	}
-	update(value: Bool['value']) {
+	update(value: Bool["value"]) {
 		this.#value = value;
 		this.node.value = value;
 	}

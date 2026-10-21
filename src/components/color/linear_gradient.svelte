@@ -1,15 +1,8 @@
-<script lang="ts" module>
-	const degrees_range = new Range({
-		max: 360,
-	});
-</script>
-
 <script lang="ts">
 	import * as three from "three/webgpu";
 	import { Bool, Color, Float } from "@/classes/controls/index";
-	import { Range } from "@/classes/range";
 	import { RendererContext } from "@/classes/renderer_context";
-	import { TWO_PI, rotateUV, uv } from "three/tsl";
+	import { rotateUV, uv } from "three/tsl";
 	import {
 		checkbox_input,
 		color_input,
@@ -23,12 +16,7 @@
 	const degrees = new Float(45);
 	const saturate = new Bool(false);
 
-	const radians = degrees.node.remap(
-		degrees_range.min,
-		degrees_range.max,
-		0,
-		TWO_PI,
-	);
+	const radians = degrees.node.remap(0, 100, 0, 360).radians();
 
 	const rx = rotateUV(uv(), radians).x;
 
@@ -68,7 +56,6 @@
 			"degrees",
 			() => degrees.value,
 			update((value) => degrees.update(value)),
-			degrees_range,
 		)}
 		{@render checkbox_input(
 			"saturate",

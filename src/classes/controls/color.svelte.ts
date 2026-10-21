@@ -1,20 +1,22 @@
-import { Color as ThreeColor } from 'three/webgpu';
-import { uniform } from 'three/tsl';
+import { Color as ThreeColor } from "three/webgpu";
+import { uniform } from "three/tsl";
 
 class Color {
-	#value;
+	value;
 	node;
-	constructor(value = '#000000') {
-		this.#value = $state(value);
+	constructor(value = "#000000") {
+		this.value = $state(value);
 		this.node = uniform(new ThreeColor(value));
 	}
-	get value() {
-		return this.#value;
-	}
-	update(value: Color['value']) {
-		this.#value = value;
+	update(value: Color["value"]) {
+		this.value = value;
 		this.node.value.set(value);
 	}
 }
+
+const update = (color: Color, value: Color["value"]) => {
+	color.value = value;
+	color.node.value.set(value);
+};
 
 export { Color };

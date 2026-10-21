@@ -1,17 +1,5 @@
-<script lang="ts" module>
-	const frequency_range = new Range({
-		min: 1,
-		max: 64,
-	});
-
-	const edge_range = new Range({
-		max: 10,
-	});
-</script>
-
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Range } from "@/classes/range";
 	import { Color, Float, Uint } from "@/classes/controls";
 	import { RendererContext } from "@/classes/renderer_context";
 	import {
@@ -28,8 +16,8 @@
 
 	const transformed_uv = uv().sub(0.5);
 
-	const frequency = new Uint(Math.floor(frequency_range.midpoint));
-	const edge = new Float(edge_range.midpoint);
+	const frequency = new Uint(50);
+	const edge = new Float(50);
 	const color_a = new Color("#d8a521");
 	const color_b = new Color("#125a8d");
 
@@ -38,7 +26,7 @@
 			.length()
 			.mul(frequency.node)
 			.sin()
-			.step(edge.node.remap(edge_range.min, edge_range.max, -1, 1))
+			.step(edge.node.remap(0, 100, -1, 1))
 			.mix(color_a.node, color_b.node),
 	});
 
@@ -77,13 +65,11 @@
 			"frequency",
 			() => frequency.value,
 			update((value) => frequency.update(value)),
-			frequency_range,
 		)}
 		{@render range_input(
 			"edge",
 			() => edge.value,
 			update((value) => edge.update(value)),
-			edge_range,
 		)}
 		{@render color_input(
 			"color a",
@@ -96,7 +82,7 @@
 			update((value) => color_b.update(value)),
 		)}
 		{@render checkbox_input(
-			"quad",
+			"render scene",
 			() => mesh.render_scene,
 			update((value) => {
 				mesh.render_scene = value;

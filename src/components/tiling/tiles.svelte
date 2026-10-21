@@ -1,35 +1,25 @@
-<script lang="ts" module>
-	const tile_count_range = new Range({
-		min: 1,
-		max: 10,
-	});
-
-	const blue_range = new Range({
-		max: 10,
-	});
-</script>
-
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Float, Uint } from "@/classes/controls/index";
+	import { Float } from "@/classes/controls/index";
 	import { Mesh } from "@/classes/mesh";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-	import { Range } from "@/classes/range";
 	import { RendererContext } from "@/classes/renderer_context";
 	import { checkbox_input, range_input } from "@/components/controls.svelte";
 	import { controls } from "@/attachments/controls";
 	import { create_renderer } from "@/attachments/create_renderer";
-	import { uv, vec3 } from "three/tsl";
 	import { resize_renderer } from "@/functions/resize_renderer";
+	import { uv, vec3 } from "three/tsl";
 
-	const tile_count = new Uint(Math.floor(tile_count_range.midpoint));
-	const blue = new Float(blue_range.midpoint);
+	const tile_count = new Float(50);
+	const blue = new Float(50);
+
+	const tile_count_remapped = tile_count.node.remap(0, 100, 1, 10);
 
 	const geometry = new three.TorusGeometry();
 	const material = new three.MeshBasicNodeMaterial({
 		colorNode: vec3(
-			uv().mul(tile_count.node).floor().div(tile_count.node),
-			blue.node.remap(blue_range.min, blue_range.max, 0, 1),
+			uv().mul(tile_count_remapped).floor().div(tile_count_remapped),
+			blue.node.remap(0, 100, 0, 1),
 		),
 	});
 
@@ -67,13 +57,11 @@
 			"tile count",
 			() => tile_count.value,
 			update((value) => tile_count.update(value)),
-			tile_count_range,
 		)}
 		{@render range_input(
 			"blue",
 			() => blue.value,
 			update((value) => blue.update(value)),
-			blue_range,
 		)}
 		{@render checkbox_input(
 			"render scene",

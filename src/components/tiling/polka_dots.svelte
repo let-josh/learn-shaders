@@ -1,24 +1,8 @@
-<script lang="ts" module>
-	const tile_count_range = new Range({
-		min: 1,
-		max: 20,
-	});
-
-	const radius_range = new Range({
-		max: 5,
-	});
-
-	const offset_range = new Range({
-		max: 5,
-	});
-</script>
-
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Color, Float, Uint } from "@/classes/controls/index";
+	import { Color, Float } from "@/classes/controls/index";
 	import { Mesh } from "@/classes/mesh";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-	import { Range } from "@/classes/range";
 	import { RendererContext } from "@/classes/renderer_context";
 	import {
 		checkbox_input,
@@ -30,29 +14,24 @@
 	import { resize_renderer } from "@/functions/resize_renderer";
 	import { uv, vec2 } from "three/tsl";
 
-	const tile_count = new Uint(Math.floor(tile_count_range.midpoint));
-	const radius = new Float(Math.floor(radius_range.midpoint));
+	const tile_count = new Float(50);
+	const radius = new Float(50);
 	const dot_color = new Color("#d8a521");
 	const background_color = new Color("#125a8d");
-	const offset = new Float(offset_range.max);
+	const offset = new Float(100);
 
-	const transformed_uv = uv().mul(tile_count.node);
+	const transformed_uv = uv().mul(tile_count.node.remap(0, 100, 1, 50));
 
 	const tile_index = transformed_uv.floor();
 
 	const tile_uv = transformed_uv
-		.add(
-			vec2(
-				offset.node.remap(radius_range.min, radius_range.max, 0, 0.5),
-				0,
-			).mul(tile_index.y.mod(2)),
-		)
+		.add(vec2(offset.node.remap(0, 100, 0, 0.5), 0).mul(tile_index.y.mod(2)))
 		.fract();
 
 	const circle = tile_uv
 		.sub(0.5)
-		.length()
-		.step(radius.node.remap(radius_range.min, radius_range.max, 0, 0.5));
+		.lengthSq()
+		.step(radius.node.remap(0, 100, 0, 0.5).pow2());
 
 	const material = new three.MeshBasicNodeMaterial({
 		colorNode: circle.mix(dot_color.node, background_color.node),
@@ -93,19 +72,16 @@
 			"tile count",
 			() => tile_count.value,
 			update((value) => tile_count.update(value)),
-			tile_count_range,
 		)}
 		{@render range_input(
 			"radius",
 			() => radius.value,
 			update((value) => radius.update(value)),
-			radius_range,
 		)}
 		{@render range_input(
 			"offset",
 			() => offset.value,
 			update((value) => offset.update(value)),
-			offset_range,
 		)}
 		{@render color_input(
 			"dot color",

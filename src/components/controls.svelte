@@ -1,16 +1,24 @@
 <script lang="ts" module>
+	import type { HTMLInputAttributes } from "svelte/elements";
+
+	type Attributes = Omit<HTMLInputAttributes, "type" | `bind:${string}`>;
+
 	export { checkbox_input, color_input, range_input };
-	import { Range } from "@/classes/range";
 </script>
 
 {#snippet checkbox_input(
 	label: string,
 	get_value: () => boolean,
 	set_value: (value: boolean) => void,
+	attributes?: Attributes,
 )}
 	<label class="label">
 		{label}
-		<input type="checkbox" bind:checked={get_value, set_value} />
+		<input
+			type="checkbox"
+			bind:checked={get_value, set_value}
+			{...attributes}
+		/>
 	</label>
 {/snippet}
 
@@ -18,10 +26,11 @@
 	label: string,
 	get_value: () => string,
 	set_value: (value: string) => void,
+	attributes?: Attributes,
 )}
 	<label class="label">
 		{label}
-		<input type="color" bind:value={get_value, set_value} />
+		<input type="color" bind:value={get_value, set_value} {...attributes} />
 	</label>
 {/snippet}
 
@@ -29,14 +38,10 @@
 	label: string,
 	get_value: () => number,
 	set_value: (value: number) => void,
-	range = new Range({
-		min: 0,
-		max: 1,
-		step: 0.1,
-	}),
+	attributes?: Attributes,
 )}
 	<label class="label">
 		{label}
-		<input type="range" {...range} bind:value={get_value, set_value} />
+		<input type="range" bind:value={get_value, set_value} {...attributes} />
 	</label>
 {/snippet}

@@ -1,11 +1,6 @@
-<script module lang="ts">
-	const t_range = new Range({ max: 10 });
-</script>
-
 <script lang="ts">
 	import * as three from "three/webgpu";
 	import { Color, Float } from "@/classes/controls/index";
-	import { Range } from "@/classes/range";
 	import { RendererContext } from "@/classes/renderer_context";
 	import { color_input, range_input } from "@/components/controls.svelte";
 	import { create_renderer } from "@/attachments/create_renderer";
@@ -13,12 +8,10 @@
 
 	const color_a = new Color("#d8a521");
 	const color_b = new Color("#125a8d");
-	const t = new Float(t_range.midpoint);
+	const t = new Float(50);
 
 	const material = new three.MeshBasicNodeMaterial({
-		colorNode: t.node
-			.remap(t_range.min, t_range.max, 0, 1)
-			.mix(color_a.node, color_b.node),
+		colorNode: t.node.remap(0, 100, 0, 1).mix(color_a.node, color_b.node),
 	});
 
 	const quad = new three.QuadMesh(material);
@@ -60,7 +53,6 @@
 			"t",
 			() => t.value,
 			update((value) => t.update(value)),
-			t_range,
 		)}
 	</fieldset>
 

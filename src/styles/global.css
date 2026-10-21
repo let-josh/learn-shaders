@@ -17,7 +17,7 @@ https://tailwindcss.com/docs/adding-custom-styles#using-custom-css
 */
 
 .controls {
-	@apply absolute top-2 right-2 bg-gray-900/85 text-accent-50;
+	@apply text-accent-50 absolute top-2 right-2 bg-gray-900/85;
 }
 .label {
 	@apply flex justify-between gap-2;

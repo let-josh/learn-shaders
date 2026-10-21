@@ -1,23 +1,12 @@
 <script lang="ts" module>
-	const tile_count_range = new Range({
-		min: 1,
-		max: 25,
-	});
-
-	const radius_range = new Range({
-		min: 0,
-		max: 10,
-	});
-
 	const TILE_BORDER_SIZE_PERCENTAGE = 98 * (1 / 100);
 </script>
 
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Bool, Color, Float, Uint } from "@/classes/controls/index";
+	import { Bool, Color, Float } from "@/classes/controls/index";
 	import { Mesh } from "@/classes/mesh";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-	import { Range } from "@/classes/range";
 	import { RendererContext } from "@/classes/renderer_context";
 	import {
 		checkbox_input,
@@ -29,14 +18,14 @@
 	import { uv, vec2 } from "three/tsl";
 	import { resize_renderer } from "@/functions/resize_renderer";
 
-	const tile_count = new Uint(Math.floor(tile_count_range.midpoint));
+	const tile_count = new Float(50);
 	const color_a = new Color("#d8a521");
 	const color_b = new Color("#125a8d");
 	const color_tile_border = new Color("#d4212a");
-	const r = new Float(radius_range.midpoint);
+	const r = new Float(50);
 	const show_grid = new Bool(false);
 
-	const t_uv = uv().mul(tile_count.node).mul(1);
+	const t_uv = uv().mul(tile_count.node.remap(0, 100, 1, 25));
 
 	const tile_uv = t_uv.fract().sub(0.5);
 	const tile_index = t_uv.floor();
@@ -44,10 +33,7 @@
 	const a = tile_uv.abs();
 	const border = a.x.max(a.y).step(0.5 * TILE_BORDER_SIZE_PERCENTAGE);
 
-	const random = (v: three.Node<"vec2">) =>
-		v.dot(vec2(12.9898, 78.233)).sin().mul(43758.5453123).fract();
-
-	const scale_x = random(tile_index).step(0.5).mul(2).sub(1);
+	const scale_x = tile_index.rand().step(0.5).mul(2).sub(1);
 	const flipped = tile_uv.mul(vec2(scale_x, 1));
 
 	const offset = flipped.x.add(flipped.y).step(0).sub(0.5);
@@ -57,14 +43,7 @@
 		.length()
 		.sub(0.5)
 		.abs()
-		.step(
-			r.node.remap(
-				radius_range.min,
-				radius_range.max,
-				0,
-				0.5 * (Math.SQRT2 - 1),
-			),
-		)
+		.step(r.node.remap(0, 100, 0, 0.5 * (Math.SQRT2 - 1)))
 		.mix(color_a.node, color_b.node);
 
 	const material = new three.MeshBasicNodeMaterial({
@@ -108,7 +87,6 @@
 			"tile count",
 			() => tile_count.value,
 			update((value) => tile_count.update(value)),
-			tile_count_range,
 		)}
 		{@render color_input(
 			"color a",
@@ -124,7 +102,6 @@
 			"radius",
 			() => r.value,
 			update((value) => r.update(value)),
-			radius_range,
 		)}
 		{@render checkbox_input(
 			"show tile border",

@@ -1,4 +1,4 @@
-import { uniform } from 'three/tsl';
+import { uniform } from "three/tsl";
 
 class Float {
 	#value;
@@ -10,7 +10,7 @@ class Float {
 	get value() {
 		return this.#value;
 	}
-	update(value: Float['value']) {
+	update(value: Float["value"]) {
 		this.#value = value;
 		this.node.value = value;
 	}

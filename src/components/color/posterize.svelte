@@ -1,18 +1,6 @@
-<script lang="ts" module>
-	const steps_range = new Range({
-		min: 1 << 4,
-		max: 1 << 7,
-	});
-
-	const t_range = new Range({
-		max: 10,
-	});
-</script>
-
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Bool, Color, Float, Uint } from "@/classes/controls/index";
-	import { Range } from "@/classes/range";
+	import { Bool, Color, Float } from "@/classes/controls/index";
 	import { RendererContext } from "@/classes/renderer_context";
 	import {
 		checkbox_input,
@@ -27,17 +15,20 @@
 	const color_b = new Color("#125a8d");
 	const use_posterize = new Bool(true);
 
-	const t = new Float(t_range.midpoint);
-	const steps = new Uint(Math.floor(steps_range.midpoint));
+	const t = new Float(50);
+	const steps = new Float(50);
 
 	const _uv = uv();
 	const color = t.node
-		.remap(t_range.min, t_range.max, 0, 1)
+		.remap(0, 100, 0, 1)
 		.mix(_uv.x, _uv.y)
 		.mix(color_a.node, color_b.node);
 
 	const material = new three.MeshBasicNodeMaterial({
-		colorNode: use_posterize.node.select(posterize(color, steps.node), color),
+		colorNode: use_posterize.node.select(
+			posterize(color, steps.node.remap(0, 100, 1 << 4, 1 << 7).floor()),
+			color,
+		),
 	});
 
 	const quad = new three.QuadMesh(material);
@@ -70,13 +61,11 @@
 			"t",
 			() => t.value,
 			update((value) => t.update(value)),
-			t_range,
 		)}
 		{@render range_input(
 			"steps",
 			() => steps.value,
 			update((value) => steps.update(value)),
-			steps_range,
 		)}
 		{@render checkbox_input(
 			"posterize",

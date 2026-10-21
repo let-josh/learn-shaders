@@ -1,18 +1,6 @@
-<script lang="ts" module>
-	const steps_range = new Range({
-		min: 1 << 4,
-		max: 1 << 7,
-	});
-
-	const t_range = new Range({
-		max: 10,
-	});
-</script>
-
 <script lang="ts">
 	import * as three from "three/webgpu";
 	import { Bool, Color, Float } from "@/classes/controls/index";
-	import { Range } from "@/classes/range";
 	import { RendererContext } from "@/classes/renderer_context";
 	import { bayerDither } from "three/addons/tsl/math/Bayer.js";
 	import {
@@ -26,20 +14,22 @@
 
 	const color_a = new Color("#d8a521");
 	const color_b = new Color("#125a8d");
-	const t = new Float(t_range.midpoint);
-	const steps = new Float(Math.floor(steps_range.midpoint));
+	const t = new Float(50);
+	const steps = new Float(50);
 	const dither = new Bool(true);
 
 	const _uv = uv();
 	const color = t.node
-		.remap(t_range.min, t_range.max, 0, 1)
+		.remap(0, 100, 0, 1)
 		.mix(_uv.x, _uv.y)
 		.mix(color_a.node, color_b.node);
 
+	const steps_remapped = steps.node.remap(0, 100, 1 << 4, 1 << 7).floor();
+
 	const material = new three.MeshBasicNodeMaterial({
 		colorNode: posterize(
-			dither.node.select(bayerDither(color, steps.node), color),
-			steps.node,
+			dither.node.select(bayerDither(color, steps_remapped), color),
+			steps_remapped,
 		),
 	});
 
@@ -82,13 +72,11 @@
 			"t",
 			() => t.value,
 			update((value) => t.update(value)),
-			t_range,
 		)}
 		{@render range_input(
 			"steps",
 			() => steps.value,
 			update((value) => steps.update(value)),
-			steps_range,
 		)}
 		{@render checkbox_input(
 			"dither",

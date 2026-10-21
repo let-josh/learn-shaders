@@ -1,16 +1,8 @@
-<script lang="ts" module>
-	const tile_count_range = new Range({
-		min: 1,
-		max: 10,
-	});
-</script>
-
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Bool, Uint } from "@/classes/controls/index";
+	import { Bool, Float } from "@/classes/controls/index";
 	import { Mesh } from "@/classes/mesh";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-	import { Range } from "@/classes/range";
 	import { RendererContext } from "@/classes/renderer_context";
 	import { checkbox_input, range_input } from "@/components/controls.svelte";
 	import { controls } from "@/attachments/controls";
@@ -18,14 +10,22 @@
 	import { resize_renderer } from "@/functions/resize_renderer";
 	import { uv } from "three/tsl";
 
-	const tile_count = new Uint(Math.floor(tile_count_range.midpoint));
+	const tile_count = new Float(50);
 	const mirror = new Bool(true);
 
-	const p = uv().mul(tile_count.node);
-	const mirrored = p.mul(0.5).add(1).fract().mul(2).sub(1).abs();
+	const p = uv().mul(tile_count.node.remap(0, 100, 1, 10));
+
+	const colorNode = p.mul(0.5).add(1).fract().mul(2).sub(1).abs();
+
+	// same result as above but using cell index and cell uvs
+	// const colorNode = p
+	// 	.fract()
+	// 	.sub(0.5)
+	// 	.mul(p.floor().mod(2).remap(0, 1, -1, 1))
+	// 	.add(0.5);
 
 	const material = new three.MeshBasicNodeMaterial({
-		colorNode: mirror.node.select(mirrored, p.fract()),
+		colorNode,
 	});
 
 	const geometry = new three.TorusGeometry();
@@ -63,7 +63,6 @@
 			"tile count",
 			() => tile_count.value,
 			update((value) => tile_count.update(value)),
-			tile_count_range,
 		)}
 		{@render checkbox_input(
 			"mirror",
