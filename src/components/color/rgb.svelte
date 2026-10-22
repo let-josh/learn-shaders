@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
 	import { Color } from "@/classes/controls/index";
-	import { RendererContext } from "@/classes/renderer_context";
+	import { Context } from "@/classes/renderer_context";
 	import { color_input } from "@/components/controls.svelte";
 	import { create_renderer } from "@/attachments/create_renderer";
 	import { resize_renderer } from "@/functions/resize_renderer";
@@ -14,9 +14,7 @@
 
 	const quad = new three.QuadMesh(material);
 
-	const context = new RendererContext();
-
-	const render = (renderer: three.Renderer) => quad.render(renderer);
+	const context = new Context();
 
 	const resize_and_render = (
 		renderer: three.Renderer,
@@ -24,7 +22,7 @@
 		height: number,
 	) => {
 		resize_renderer(renderer, width, height);
-		render(renderer);
+		quad.render(renderer);
 	};
 </script>
 
@@ -35,7 +33,7 @@
 			() => color.value,
 			(value) => {
 				color.update(value);
-				context.if_renderer(render);
+				context.if_renderer((renderer) => quad.render(renderer));
 			},
 		)}
 	</fieldset>
@@ -52,7 +50,7 @@
 		}
 		{@attach create_renderer((renderer) => {
 			const canvas = renderer.domElement;
-			resize_and_render(renderer, canvas.clientWidth, canvas.clientWidth);
+			resize_and_render(renderer, canvas.clientWidth, canvas.clientHeight);
 			const last = context.renderer;
 			context.renderer = renderer;
 			return () => {

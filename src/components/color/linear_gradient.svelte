@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
 	import { Bool, Color, Float } from "@/classes/controls/index";
-	import { RendererContext } from "@/classes/renderer_context";
+	import { Context } from "@/classes/renderer_context";
 	import { rotateUV, uv } from "three/tsl";
 	import {
 		checkbox_input,
@@ -28,16 +28,14 @@
 
 	const quad = new three.QuadMesh(material);
 
-	const context = new RendererContext();
+	const context = new Context();
 
 	const render = (renderer: three.Renderer) => quad.render(renderer);
 
-	const update =
-		<T,>(update: (value: T) => void) =>
-		(value: T) => {
-			update(value);
-			context.if_renderer(render);
-		};
+	const update = (callback: () => void) => {
+		callback();
+		context.if_renderer(render);
+	};
 </script>
 
 <div class="relative">
@@ -45,22 +43,22 @@
 		{@render color_input(
 			"color a",
 			() => color_a.value,
-			update((value) => color_a.update(value)),
+			(value) => update(() => color_a.update(value)),
 		)}
 		{@render color_input(
 			"color b",
 			() => color_b.value,
-			update((value) => color_b.update(value)),
+			(value) => update(() => color_b.update(value)),
 		)}
 		{@render range_input(
 			"degrees",
 			() => degrees.value,
-			update((value) => degrees.update(value)),
+			(value) => update(() => degrees.update(value)),
 		)}
 		{@render checkbox_input(
 			"saturate",
 			() => saturate.value,
-			update((value) => saturate.update(value)),
+			(value) => update(() => saturate.update(value)),
 		)}
 	</fieldset>
 

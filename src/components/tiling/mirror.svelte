@@ -1,9 +1,8 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
 	import { Bool, Float } from "@/classes/controls/index";
-	import { Mesh } from "@/classes/mesh";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-	import { RendererContext } from "@/classes/renderer_context";
+	import { Context } from "@/classes/renderer_context";
 	import { checkbox_input, range_input } from "@/components/controls.svelte";
 	import { controls } from "@/attachments/controls";
 	import { create_renderer } from "@/attachments/create_renderer";
@@ -24,21 +23,25 @@
 	// 	.mul(p.floor().mod(2).remap(0, 1, -1, 1))
 	// 	.add(0.5);
 
+	const geometry = new three.TorusGeometry();
 	const material = new three.MeshBasicNodeMaterial({
 		colorNode,
 	});
 
-	const geometry = new three.TorusGeometry();
-	const mesh = new Mesh(material, geometry);
+	const mesh = new three.Mesh(geometry, material);
+	const quad = new three.QuadMesh(material);
 
 	const axis = new three.Vector3(1, 1, 2).normalize();
 	const camera = new three.PerspectiveCamera().translateOnAxis(axis, 4);
 	const orbit = new OrbitControls(camera);
-	orbit.enabled = mesh.render_scene;
+	orbit.enabled = false;
 
-	const render = (renderer: three.Renderer) => mesh.render(renderer, camera);
+	const render = (renderer: three.Renderer) => {
+		if (orbit.enabled) renderer.render(mesh, camera);
+		else quad.render(renderer);
+	};
 
-	const context = new RendererContext();
+	const context = new Context();
 
 	const resize_and_render = (
 		renderer: three.Renderer,
@@ -46,15 +49,15 @@
 		height: number,
 	) => {
 		resize_renderer(renderer, width, height);
+		camera.aspect = width / height;
+		camera.updateProjectionMatrix();
 		render(renderer);
 	};
 
-	const update =
-		<T,>(update: (value: T) => void) =>
-		(value: T) => {
-			update(value);
-			context.if_renderer(render);
-		};
+	const update = (callback: () => void) => {
+		callback();
+		context.if_renderer(render);
+	};
 </script>
 
 <div class="relative">
@@ -62,20 +65,17 @@
 		{@render range_input(
 			"tile count",
 			() => tile_count.value,
-			update((value) => tile_count.update(value)),
+			(value) => update(() => tile_count.update(value)),
 		)}
 		{@render checkbox_input(
 			"mirror",
 			() => mirror.value,
-			update((value) => mirror.update(value)),
+			(value) => update(() => mirror.update(value)),
 		)}
 		{@render checkbox_input(
 			"render scene",
-			() => mesh.render_scene,
-			update((value) => {
-				mesh.render_scene = value;
-				orbit.enabled = value;
-			}),
+			() => orbit.enabled,
+			(value) => update(() => (orbit.enabled = value)),
 		)}
 	</fieldset>
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
+	import { Context } from "@/classes/renderer_context";
 	import { Float } from "@/classes/controls/";
-	import { RendererContext } from "@/classes/renderer_context";
 	import { create_renderer } from "@/attachments/create_renderer";
 	import { range_input } from "@/components/controls.svelte";
 	import { resize_renderer } from "@/functions/resize_renderer";
@@ -27,7 +27,7 @@
 		render(renderer);
 	};
 
-	const context = new RendererContext();
+	const context = new Context();
 </script>
 
 <div class="relative">

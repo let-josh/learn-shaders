@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
 	import { Bool, Color, Float } from "@/classes/controls/index";
-	import { RendererContext } from "@/classes/renderer_context";
+	import { Context } from "@/classes/renderer_context";
 	import {
 		checkbox_input,
 		color_input,
@@ -33,16 +33,14 @@
 
 	const quad = new three.QuadMesh(material);
 
-	const context = new RendererContext();
+	const context = new Context();
 
 	const render = (renderer: three.Renderer) => quad.render(renderer);
 
-	const update =
-		<T,>(update: (value: T) => void) =>
-		(value: T) => {
-			update(value);
-			context.if_renderer(render);
-		};
+	const update = (callback: () => void) => {
+		callback();
+		context.if_renderer(render);
+	};
 </script>
 
 <div class="relative">
@@ -50,27 +48,27 @@
 		{@render color_input(
 			"color a",
 			() => color_a.value,
-			update((value) => color_a.update(value)),
+			(value) => update(() => color_a.update(value)),
 		)}
 		{@render color_input(
 			"color b",
 			() => color_b.value,
-			update((value) => color_b.update(value)),
+			(value) => update(() => color_b.update(value)),
 		)}
 		{@render range_input(
 			"t",
 			() => t.value,
-			update((value) => t.update(value)),
+			(value) => update(() => t.update(value)),
 		)}
 		{@render range_input(
 			"steps",
 			() => steps.value,
-			update((value) => steps.update(value)),
+			(value) => update(() => steps.update(value)),
 		)}
 		{@render checkbox_input(
 			"posterize",
 			() => use_posterize.value,
-			update((value) => use_posterize.update(value)),
+			(value) => update(() => use_posterize.update(value)),
 		)}
 	</fieldset>
 

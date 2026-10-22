@@ -1,9 +1,8 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
 	import { Color, Float } from "@/classes/controls/index";
-	import { Mesh } from "@/classes/mesh";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-	import { RendererContext } from "@/classes/renderer_context";
+	import { Context } from "@/classes/renderer_context";
 	import {
 		checkbox_input,
 		color_input,
@@ -37,17 +36,21 @@
 		colorNode: circle.mix(dot_color.node, background_color.node),
 	});
 
-	const context = new RendererContext();
+	const context = new Context();
 
 	const geometry = new three.TorusGeometry();
-	const mesh = new Mesh(material, geometry);
+	const mesh = new three.Mesh(geometry, material);
+	const quad = new three.QuadMesh(material);
 
 	const axis = new three.Vector3(1, 1, 2).normalize();
 	const camera = new three.PerspectiveCamera().translateOnAxis(axis, 4);
 	const orbit = new OrbitControls(camera);
-	orbit.enabled = mesh.render_scene;
+	orbit.enabled = false;
 
-	const render = (renderer: three.Renderer) => mesh.render(renderer, camera);
+	const render = (renderer: three.Renderer) => {
+		if (orbit.enabled) renderer.render(mesh, camera);
+		else quad.render(renderer);
+	};
 
 	const resize_and_render = (
 		renderer: three.Renderer,
@@ -55,15 +58,15 @@
 		height: number,
 	) => {
 		resize_renderer(renderer, width, height);
+		camera.aspect = width / height;
+		camera.updateProjectionMatrix();
 		render(renderer);
 	};
 
-	const update =
-		<T,>(update: (value: T) => void) =>
-		(value: T) => {
-			update(value);
-			context.if_renderer(render);
-		};
+	const update = (callback: () => void) => {
+		callback();
+		context.if_renderer(render);
+	};
 </script>
 
 <div class="relative">
@@ -71,35 +74,32 @@
 		{@render range_input(
 			"tile count",
 			() => tile_count.value,
-			update((value) => tile_count.update(value)),
+			(value) => update(() => tile_count.update(value)),
 		)}
 		{@render range_input(
 			"radius",
 			() => radius.value,
-			update((value) => radius.update(value)),
+			(value) => update(() => radius.update(value)),
 		)}
 		{@render range_input(
 			"offset",
 			() => offset.value,
-			update((value) => offset.update(value)),
+			(value) => update(() => offset.update(value)),
 		)}
 		{@render color_input(
 			"dot color",
 			() => dot_color.value,
-			update((value) => dot_color.update(value)),
+			(value) => update(() => dot_color.update(value)),
 		)}
 		{@render color_input(
 			"background color",
 			() => background_color.value,
-			update((value) => background_color.update(value)),
+			(value) => update(() => background_color.update(value)),
 		)}
 		{@render checkbox_input(
 			"render scene",
-			() => mesh.render_scene,
-			update((value) => {
-				mesh.render_scene = value;
-				orbit.enabled = value;
-			}),
+			() => orbit.enabled,
+			(value) => update(() => (orbit.enabled = value)),
 		)}
 	</fieldset>
 

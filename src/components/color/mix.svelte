@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
 	import { Color, Float } from "@/classes/controls/index";
-	import { RendererContext } from "@/classes/renderer_context";
+	import { Context } from "@/classes/renderer_context";
 	import { color_input, range_input } from "@/components/controls.svelte";
 	import { create_renderer } from "@/attachments/create_renderer";
 	import { resize_renderer } from "@/functions/resize_renderer";
@@ -16,7 +16,7 @@
 
 	const quad = new three.QuadMesh(material);
 
-	const context = new RendererContext();
+	const context = new Context();
 
 	const render = (renderer: three.Renderer) => quad.render(renderer);
 
@@ -29,12 +29,10 @@
 		render(renderer);
 	};
 
-	const update =
-		<T,>(update: (value: T) => void) =>
-		(value: T) => {
-			update(value);
-			context.if_renderer(render);
-		};
+	const update = (callback: () => void) => {
+		callback();
+		context.if_renderer(render);
+	};
 </script>
 
 <div class="relative">
@@ -42,17 +40,17 @@
 		{@render color_input(
 			"color a",
 			() => color_a.value,
-			update((value) => color_a.update(value)),
+			(value) => update(() => color_a.update(value)),
 		)}
 		{@render color_input(
 			"color b",
 			() => color_b.value,
-			update((value) => color_b.update(value)),
+			(value) => update(() => color_b.update(value)),
 		)}
 		{@render range_input(
 			"t",
 			() => t.value,
-			update((value) => t.update(value)),
+			(value) => update(() => t.update(value)),
 		)}
 	</fieldset>
 
