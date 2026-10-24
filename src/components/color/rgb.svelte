@@ -1,15 +1,15 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Color } from "@/classes/controls/index";
 	import { Context } from "@/classes/renderer_context";
 	import { color_input } from "@/components/controls.svelte";
 	import { create_renderer } from "@/attachments/create_renderer";
 	import { resize_renderer } from "@/functions/resize_renderer";
+	import { uniform } from "three/tsl";
 
-	const color = new Color("#d8a521");
+	const colorNode = uniform(new three.Color("#d8a521"));
 
 	const material = new three.MeshBasicNodeMaterial({
-		colorNode: color.node,
+		colorNode,
 	});
 
 	const quad = new three.QuadMesh(material);
@@ -30,10 +30,12 @@
 	<fieldset class="controls">
 		{@render color_input(
 			"color",
-			() => color.value,
+			() => `#${colorNode.value.getHexString()}`,
 			(value) => {
-				color.update(value);
-				context.if_renderer((renderer) => quad.render(renderer));
+				colorNode.value.set(value);
+				context.if_renderer((renderer) => {
+					quad.render(renderer);
+				});
 			},
 		)}
 	</fieldset>
@@ -43,9 +45,9 @@
 		bind:contentBoxSize={
 			null,
 			([size]: ResizeObserverSize[]) => {
-				context.if_renderer((renderer) =>
-					resize_and_render(renderer, size.inlineSize, size.blockSize),
-				);
+				context.if_renderer((renderer) => {
+					resize_and_render(renderer, size.inlineSize, size.blockSize);
+				});
 			}
 		}
 		{@attach create_renderer((renderer) => {

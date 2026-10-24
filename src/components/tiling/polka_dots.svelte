@@ -1,6 +1,5 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Color, Float } from "@/classes/controls/index";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 	import { Context } from "@/classes/renderer_context";
 	import {
@@ -11,29 +10,29 @@
 	import { controls } from "@/attachments/controls";
 	import { create_renderer } from "@/attachments/create_renderer";
 	import { resize_renderer } from "@/functions/resize_renderer";
-	import { uv, vec2 } from "three/tsl";
+	import { uniform, uv, vec2 } from "three/tsl";
 
-	const tile_count = new Float(50);
-	const radius = new Float(50);
-	const dot_color = new Color("#d8a521");
-	const background_color = new Color("#125a8d");
-	const offset = new Float(100);
+	const scale = uniform(50);
+	const radius = uniform(50);
+	const dot_color = uniform(new three.Color("#d8a521"));
+	const background_color = uniform(new three.Color("#125a8d"));
+	const offset = uniform(100);
 
-	const transformed_uv = uv().mul(tile_count.node.remap(0, 100, 1, 50));
+	const transformed_uv = uv().mul(scale.remap(0, 100, 1, 50));
 
 	const tile_index = transformed_uv.floor();
 
 	const tile_uv = transformed_uv
-		.add(vec2(offset.node.remap(0, 100, 0, 0.5), 0).mul(tile_index.y.mod(2)))
+		.add(vec2(offset.remap(0, 100, 0, 0.5), 0).mul(tile_index.y.mod(2)))
 		.fract();
 
 	const circle = tile_uv
 		.sub(0.5)
 		.lengthSq()
-		.step(radius.node.remap(0, 100, 0, 0.5).pow2());
+		.step(radius.remap(0, 100, 0, 0.5).pow2());
 
 	const material = new three.MeshBasicNodeMaterial({
-		colorNode: circle.mix(dot_color.node, background_color.node),
+		colorNode: circle.mix(dot_color, background_color),
 	});
 
 	const context = new Context();
@@ -72,29 +71,49 @@
 <div class="relative">
 	<fieldset class="controls">
 		{@render range_input(
-			"tile count",
-			() => tile_count.value,
-			(value) => update(() => tile_count.update(value)),
+			"scale",
+			() => scale.value,
+			(value) => {
+				update(() => {
+					scale.value = value;
+				});
+			},
 		)}
 		{@render range_input(
 			"radius",
 			() => radius.value,
-			(value) => update(() => radius.update(value)),
+			(value) => {
+				update(() => {
+					radius.value = value;
+				});
+			},
 		)}
 		{@render range_input(
 			"offset",
 			() => offset.value,
-			(value) => update(() => offset.update(value)),
+			(value) => {
+				update(() => {
+					offset.value = value;
+				});
+			},
 		)}
 		{@render color_input(
 			"dot color",
-			() => dot_color.value,
-			(value) => update(() => dot_color.update(value)),
+			() => `#${dot_color.value.getHexString()}`,
+			(value) => {
+				update(() => {
+					dot_color.value.set(value);
+				});
+			},
 		)}
 		{@render color_input(
 			"background color",
-			() => background_color.value,
-			(value) => update(() => background_color.update(value)),
+			() => `#${background_color.value.getHexString()}`,
+			(value) => {
+				update(() => {
+					background_color.value.set(value);
+				});
+			},
 		)}
 		{@render checkbox_input(
 			"render scene",
@@ -120,7 +139,9 @@
 			const last = context.renderer;
 			context.renderer = renderer;
 
-			const on_change = () => render(renderer);
+			const on_change = () => {
+				render(renderer);
+			};
 
 			orbit.addEventListener("change", on_change);
 			return () => {

@@ -1,18 +1,17 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Bool, Float } from "@/classes/controls/index";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 	import { Context } from "@/classes/renderer_context";
 	import { checkbox_input, range_input } from "@/components/controls.svelte";
 	import { controls } from "@/attachments/controls";
 	import { create_renderer } from "@/attachments/create_renderer";
 	import { resize_renderer } from "@/functions/resize_renderer";
-	import { uv } from "three/tsl";
+	import { uniform, uv } from "three/tsl";
 
-	const tile_count = new Float(50);
-	const mirror = new Bool(true);
+	const scale = uniform(50);
+	const mirror = uniform(true);
 
-	const p = uv().mul(tile_count.node.remap(0, 100, 1, 10));
+	const p = uv().mul(scale.remap(0, 100, 1, 10));
 
 	const colorNode = p.mul(0.5).add(1).fract().mul(2).sub(1).abs();
 
@@ -63,19 +62,30 @@
 <div class="relative">
 	<fieldset class="controls">
 		{@render range_input(
-			"tile count",
-			() => tile_count.value,
-			(value) => update(() => tile_count.update(value)),
+			"scale",
+			() => scale.value,
+			(value) => {
+				update(() => {
+					scale.value = value;
+				});
+			},
 		)}
 		{@render checkbox_input(
 			"mirror",
 			() => mirror.value,
-			(value) => update(() => mirror.update(value)),
+			(value) => {
+				update(() => {
+					mirror.value = value;
+				});
+			},
 		)}
 		{@render checkbox_input(
 			"render scene",
 			() => orbit.enabled,
-			(value) => update(() => (orbit.enabled = value)),
+			(value) =>
+				update(() => {
+					orbit.enabled = value;
+				}),
 		)}
 	</fieldset>
 
@@ -84,9 +94,9 @@
 		bind:contentBoxSize={
 			null,
 			([size]: ResizeObserverSize[]) => {
-				context.if_renderer((renderer) =>
-					resize_and_render(renderer, size.inlineSize, size.blockSize),
-				);
+				context.if_renderer((renderer) => {
+					resize_and_render(renderer, size.inlineSize, size.blockSize);
+				});
 			}
 		}
 		{@attach controls(orbit)}

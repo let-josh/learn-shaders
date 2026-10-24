@@ -1,24 +1,23 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Float } from "@/classes/controls/index";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 	import { Context } from "@/classes/renderer_context";
 	import { checkbox_input, range_input } from "@/components/controls.svelte";
 	import { controls } from "@/attachments/controls";
 	import { create_renderer } from "@/attachments/create_renderer";
 	import { resize_renderer } from "@/functions/resize_renderer";
-	import { uv, vec3 } from "three/tsl";
+	import { uniform, uv, vec3 } from "three/tsl";
 
-	const tile_count = new Float(50);
-	const blue = new Float(50);
+	const scale = uniform(50);
+	const blue = uniform(50);
 
 	const geometry = new three.TorusGeometry();
 
-	const tile_count_remapped = tile_count.node.remap(0, 100, 1, 10);
+	const scale_remapped = scale.remap(0, 100, 1, 10);
 	const material = new three.MeshBasicNodeMaterial({
 		colorNode: vec3(
-			uv().mul(tile_count_remapped).floor().div(tile_count_remapped),
-			blue.node.remap(0, 100, 0, 1),
+			uv().mul(scale_remapped).floor().div(scale_remapped),
+			blue.remap(0, 100, 0, 1),
 		),
 	});
 
@@ -57,19 +56,31 @@
 <div class="relative">
 	<fieldset class="controls">
 		{@render range_input(
-			"tile count",
-			() => tile_count.value,
-			(value) => update(() => tile_count.update(value)),
+			"scale",
+			() => scale.value,
+			(value) => {
+				update(() => {
+					scale.value = value;
+				});
+			},
 		)}
 		{@render range_input(
 			"blue",
 			() => blue.value,
-			(value) => update(() => blue.update(value)),
+			(value) => {
+				update(() => {
+					blue.value = value;
+				});
+			},
 		)}
 		{@render checkbox_input(
 			"render scene",
 			() => orbit.enabled,
-			(value) => update(() => (orbit.enabled = value)),
+			(value) => {
+				update(() => {
+					orbit.enabled = value;
+				});
+			},
 		)}
 	</fieldset>
 
@@ -78,9 +89,9 @@
 		bind:contentBoxSize={
 			null,
 			([size]: ResizeObserverSize[]) => {
-				context.if_renderer((renderer) =>
-					resize_and_render(renderer, size.inlineSize, size.blockSize),
-				);
+				context.if_renderer((renderer) => {
+					resize_and_render(renderer, size.inlineSize, size.blockSize);
+				});
 			}
 		}
 		{@attach controls(orbit)}
@@ -90,7 +101,9 @@
 			const last = context.renderer;
 			context.renderer = renderer;
 
-			const on_change = () => render(renderer);
+			const on_change = () => {
+				render(renderer);
+			};
 
 			orbit.addEventListener("change", on_change);
 			return () => {

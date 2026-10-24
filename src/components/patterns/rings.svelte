@@ -1,6 +1,5 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Color, Float, Uint } from "@/classes/controls";
 	import { Context } from "@/classes/renderer_context";
 	import {
 		checkbox_input,
@@ -8,25 +7,25 @@
 		range_input,
 	} from "@/components/controls.svelte";
 	import { create_renderer } from "@/attachments/create_renderer";
-	import { uv } from "three/tsl";
+	import { uniform, uv } from "three/tsl";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 	import { controls } from "@/attachments/controls";
 	import { resize_renderer } from "@/functions/resize_renderer";
 
 	const transformed_uv = uv().sub(0.5);
 
-	const frequency = new Uint(50);
-	const edge = new Float(50);
-	const color_a = new Color("#d8a521");
-	const color_b = new Color("#125a8d");
+	const frequency = uniform(50, "uint");
+	const edge = uniform(50);
+	const color_a = uniform(new three.Color("#d8a521"));
+	const color_b = uniform(new three.Color("#125a8d"));
 
 	const material = new three.MeshBasicNodeMaterial({
 		colorNode: transformed_uv
 			.length()
-			.mul(frequency.node)
+			.mul(frequency)
 			.sin()
-			.step(edge.node.remap(0, 100, -1, 1))
-			.mix(color_a.node, color_b.node),
+			.step(edge.remap(0, 100, -1, 1))
+			.mix(color_a, color_b),
 	});
 
 	const geometry = new three.SphereGeometry();
@@ -67,27 +66,47 @@
 		{@render range_input(
 			"frequency",
 			() => frequency.value,
-			(value) => update(() => frequency.update(value)),
+			(value) => {
+				update(() => {
+					frequency.value = value;
+				});
+			},
 		)}
 		{@render range_input(
 			"edge",
 			() => edge.value,
-			(value) => update(() => edge.update(value)),
+			(value) => {
+				update(() => {
+					edge.value = value;
+				});
+			},
 		)}
 		{@render color_input(
 			"color a",
-			() => color_a.value,
-			(value) => update(() => color_a.update(value)),
+			() => `#${color_a.value.getHexString()}`,
+			(value) => {
+				update(() => {
+					color_a.value.set(value);
+				});
+			},
 		)}
 		{@render color_input(
 			"color b",
-			() => color_b.value,
-			(value) => update(() => color_b.update(value)),
+			() => `#${color_b.value.getHexString()}`,
+			(value) => {
+				update(() => {
+					color_b.value.set(value);
+				});
+			},
 		)}
 		{@render checkbox_input(
 			"render scene",
 			() => orbit.enabled,
-			(value) => update(() => (orbit.enabled = value)),
+			(value) => {
+				update(() => {
+					orbit.enabled = value;
+				});
+			},
 		)}
 	</fieldset>
 
@@ -96,9 +115,9 @@
 		bind:contentBoxSize={
 			null,
 			([size]: ResizeObserverSize[]) => {
-				context.if_renderer((renderer) =>
-					resize_and_render(renderer, size.inlineSize, size.blockSize),
-				);
+				context.if_renderer((renderer) => {
+					resize_and_render(renderer, size.inlineSize, size.blockSize);
+				});
 			}
 		}
 		{@attach controls(orbit)}

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Bool, Color, Float } from "@/classes/controls/index";
 	import { Context } from "@/classes/renderer_context";
 	import {
 		checkbox_input,
@@ -8,25 +7,21 @@
 		range_input,
 	} from "@/components/controls.svelte";
 	import { create_renderer } from "@/attachments/create_renderer";
-	import { posterize, uv } from "three/tsl";
+	import { posterize, uniform, uv } from "three/tsl";
 	import { resize_renderer } from "@/functions/resize_renderer";
 
-	const color_a = new Color("#d8a521");
-	const color_b = new Color("#125a8d");
-	const use_posterize = new Bool(true);
-
-	const t = new Float(50);
-	const steps = new Float(50);
+	const color_a = uniform(new three.Color("#d8a521"));
+	const color_b = uniform(new three.Color("#125a8d"));
+	const use_posterize = uniform(true);
+	const t = uniform(50);
+	const steps = uniform(50);
 
 	const _uv = uv();
-	const color = t.node
-		.remap(0, 100, 0, 1)
-		.mix(_uv.x, _uv.y)
-		.mix(color_a.node, color_b.node);
+	const color = t.remap(0, 100, 0, 1).mix(_uv.x, _uv.y).mix(color_a, color_b);
 
 	const material = new three.MeshBasicNodeMaterial({
-		colorNode: use_posterize.node.select(
-			posterize(color, steps.node.remap(0, 100, 1 << 4, 1 << 7).floor()),
+		colorNode: use_posterize.select(
+			posterize(color, steps.remap(0, 100, 1 << 4, 1 << 7).floor()),
 			color,
 		),
 	});
@@ -41,34 +36,63 @@
 		callback();
 		context.if_renderer(render);
 	};
+
+	const resize_and_render = (
+		renderer: three.Renderer,
+		width: number,
+		height: number,
+	) => {
+		resize_renderer(renderer, width, height);
+		render(renderer);
+	};
 </script>
 
 <div class="relative">
 	<fieldset class="controls">
 		{@render color_input(
 			"color a",
-			() => color_a.value,
-			(value) => update(() => color_a.update(value)),
+			() => `#${color_a.value.getHexString()}`,
+			(value) => {
+				update(() => {
+					color_a.value.set(value);
+				});
+			},
 		)}
 		{@render color_input(
 			"color b",
-			() => color_b.value,
-			(value) => update(() => color_b.update(value)),
+			() => `#${color_b.value.getHexString()}`,
+			(value) => {
+				update(() => {
+					color_b.value.set(value);
+				});
+			},
 		)}
 		{@render range_input(
 			"t",
 			() => t.value,
-			(value) => update(() => t.update(value)),
+			(value) => {
+				update(() => {
+					t.value = value;
+				});
+			},
 		)}
 		{@render range_input(
 			"steps",
 			() => steps.value,
-			(value) => update(() => steps.update(value)),
+			(value) => {
+				update(() => {
+					steps.value = value;
+				});
+			},
 		)}
 		{@render checkbox_input(
 			"posterize",
 			() => use_posterize.value,
-			(value) => update(() => use_posterize.update(value)),
+			(value) => {
+				update(() => {
+					use_posterize.value = value;
+				});
+			},
 		)}
 	</fieldset>
 
@@ -78,15 +102,13 @@
 			null,
 			([size]: ResizeObserverSize[]) => {
 				context.if_renderer((renderer) => {
-					resize_renderer(renderer, size.inlineSize, size.blockSize);
-					render(renderer);
+					resize_and_render(renderer, size.inlineSize, size.blockSize);
 				});
 			}
 		}
 		{@attach create_renderer((renderer) => {
 			const canvas = renderer.domElement;
-			resize_renderer(renderer, canvas.clientWidth, canvas.clientHeight);
-			render(renderer);
+			resize_and_render(renderer, canvas.clientWidth, canvas.clientHeight);
 			const last = context.renderer;
 			context.renderer = renderer;
 			return () => {

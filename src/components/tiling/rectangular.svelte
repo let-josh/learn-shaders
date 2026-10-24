@@ -1,17 +1,16 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
 	import { Context } from "@/classes/renderer_context";
-	import { Float } from "@/classes/controls/";
 	import { create_renderer } from "@/attachments/create_renderer";
 	import { range_input } from "@/components/controls.svelte";
 	import { resize_renderer } from "@/functions/resize_renderer";
-	import { uv } from "three/tsl";
+	import { uniform, uv } from "three/tsl";
 
-	const tile_count = new Float(50);
+	const scale = uniform(50);
 
 	const material = new three.MeshBasicNodeMaterial({
 		colorNode: uv()
-			.mul(tile_count.node.remap(0, 100, 1, 10))
+			.mul(scale.remap(0, 100, 1, 10))
 			.fract(),
 	});
 	const quad = new three.QuadMesh(material);
@@ -33,10 +32,10 @@
 <div class="relative">
 	<fieldset class="controls">
 		{@render range_input(
-			"count",
-			() => tile_count.value,
+			"scale",
+			() => scale.value,
 			(value) => {
-				tile_count.update(value);
+				scale.value = value;
 				context.if_renderer((renderer) => quad.render(renderer));
 			},
 		)}
@@ -47,9 +46,9 @@
 		bind:contentBoxSize={
 			null,
 			([size]: ResizeObserverSize[]) => {
-				context.if_renderer((renderer) =>
-					resize_and_render(renderer, size.inlineSize, size.blockSize),
-				);
+				context.if_renderer((renderer) => {
+					resize_and_render(renderer, size.inlineSize, size.blockSize);
+				});
 			}
 		}
 		{@attach create_renderer((renderer) => {

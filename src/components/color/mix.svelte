@@ -1,17 +1,17 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Color, Float } from "@/classes/controls/index";
 	import { Context } from "@/classes/renderer_context";
 	import { color_input, range_input } from "@/components/controls.svelte";
 	import { create_renderer } from "@/attachments/create_renderer";
 	import { resize_renderer } from "@/functions/resize_renderer";
+	import { uniform } from "three/tsl";
 
-	const color_a = new Color("#d8a521");
-	const color_b = new Color("#125a8d");
-	const t = new Float(50);
+	const color_a = uniform(new three.Color("#d8a521"));
+	const color_b = uniform(new three.Color("#125a8d"));
+	const t = uniform(50);
 
 	const material = new three.MeshBasicNodeMaterial({
-		colorNode: t.node.remap(0, 100, 0, 1).mix(color_a.node, color_b.node),
+		colorNode: t.remap(0, 100, 0, 1).mix(color_a, color_b),
 	});
 
 	const quad = new three.QuadMesh(material);
@@ -39,18 +39,30 @@
 	<fieldset class="controls">
 		{@render color_input(
 			"color a",
-			() => color_a.value,
-			(value) => update(() => color_a.update(value)),
+			() => `#${color_a.value.getHexString()}`,
+			(value) => {
+				update(() => {
+					color_a.value.set(value);
+				});
+			},
 		)}
 		{@render color_input(
 			"color b",
-			() => color_b.value,
-			(value) => update(() => color_b.update(value)),
+			() => `#${color_b.value.getHexString()}`,
+			(value) => {
+				update(() => {
+					color_b.value.set(value);
+				});
+			},
 		)}
 		{@render range_input(
 			"t",
 			() => t.value,
-			(value) => update(() => t.update(value)),
+			(value) => {
+				update(() => {
+					t.value = value;
+				});
+			},
 		)}
 	</fieldset>
 
@@ -59,9 +71,9 @@
 		bind:contentBoxSize={
 			null,
 			([size]: ResizeObserverSize[]) => {
-				context.if_renderer((renderer) =>
-					resize_and_render(renderer, size.inlineSize, size.blockSize),
-				);
+				context.if_renderer((renderer) => {
+					resize_and_render(renderer, size.inlineSize, size.blockSize);
+				});
 			}
 		}
 		{@attach create_renderer((renderer) => {

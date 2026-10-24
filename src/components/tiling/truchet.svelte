@@ -4,7 +4,6 @@
 
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Bool, Color, Float } from "@/classes/controls/index";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 	import { Context } from "@/classes/renderer_context";
 	import {
@@ -14,17 +13,17 @@
 	} from "@/components/controls.svelte";
 	import { controls } from "@/attachments/controls";
 	import { create_renderer } from "@/attachments/create_renderer";
-	import { uv, vec2 } from "three/tsl";
+	import { uniform, uv, vec2 } from "three/tsl";
 	import { resize_renderer } from "@/functions/resize_renderer";
 
-	const tile_count = new Float(50);
-	const color_a = new Color("#d8a521");
-	const color_b = new Color("#125a8d");
-	const color_tile_border = new Color("#d4212a");
-	const r = new Float(50);
-	const show_grid = new Bool(false);
+	const scale = uniform(50);
+	const color_a = uniform(new three.Color("#d8a521"));
+	const color_b = uniform(new three.Color("#125a8d"));
+	const color_tile_border = uniform(new three.Color("#d4212a"));
+	const r = uniform(50);
+	const show_grid = uniform(false);
 
-	const t_uv = uv().mul(tile_count.node.remap(0, 100, 1, 25));
+	const t_uv = uv().mul(scale.remap(0, 100, 1, 25));
 
 	const tile_uv = t_uv.fract().sub(0.5);
 	const tile_index = t_uv.floor();
@@ -42,12 +41,12 @@
 		.length()
 		.sub(0.5)
 		.abs()
-		.step(r.node.remap(0, 100, 0, 0.5 * (Math.SQRT2 - 1)))
-		.mix(color_a.node, color_b.node);
+		.step(r.remap(0, 100, 0, 0.5 * (Math.SQRT2 - 1)))
+		.mix(color_a, color_b);
 
 	const material = new three.MeshBasicNodeMaterial({
-		colorNode: show_grid.node.select(
-			border.mix(truchet, color_tile_border.node),
+		colorNode: show_grid.select(
+			border.mix(truchet, color_tile_border),
 			truchet,
 		),
 	});
@@ -78,52 +77,76 @@
 
 	const context = new Context();
 
-	const update =
-		<T,>(update: (value: T) => void) =>
-		(value: T) => {
-			update(value);
-			context.if_renderer(render);
-		};
+	const update = (callback: () => void) => {
+		callback();
+		context.if_renderer(render);
+	};
 </script>
 
 <div class="relative">
 	<fieldset class="controls">
 		{@render range_input(
-			"tile count",
-			() => tile_count.value,
-			update((value) => tile_count.update(value)),
+			"scale",
+			() => scale.value,
+			(value) => {
+				update(() => {
+					scale.value = value;
+				});
+			},
 		)}
 		{@render color_input(
 			"color a",
-			() => color_a.value,
-			update((value) => color_a.update(value)),
+			() => `#${color_a.value.getHexString()}`,
+			(value) => {
+				update(() => {
+					color_a.value.set(value);
+				});
+			},
 		)}
 		{@render color_input(
 			"color b",
-			() => color_b.value,
-			update((value) => color_b.update(value)),
+			() => `#${color_b.value.getHexString()}`,
+			(value) => {
+				update(() => {
+					color_b.value.set(value);
+				});
+			},
 		)}
 		{@render range_input(
 			"radius",
 			() => r.value,
-			update((value) => r.update(value)),
+			(value) => {
+				update(() => {
+					r.value = value;
+				});
+			},
 		)}
 		{@render checkbox_input(
 			"show tile border",
 			() => show_grid.value,
-			update((value) => show_grid.update(value)),
+			(value) => {
+				update(() => {
+					show_grid.value = value;
+				});
+			},
 		)}
 		{@render color_input(
 			"tile border color",
-			() => color_tile_border.value,
-			update((value) => color_tile_border.update(value)),
+			() => `#${color_tile_border.value.getHexString()}`,
+			(value) => {
+				update(() => {
+					color_tile_border.value.set(value);
+				});
+			},
 		)}
 		{@render checkbox_input(
 			"render scene",
 			() => orbit.enabled,
-			update((value) => {
-				orbit.enabled = value;
-			}),
+			(value) => {
+				update(() => {
+					orbit.enabled = value;
+				});
+			},
 		)}
 	</fieldset>
 
@@ -132,9 +155,9 @@
 		bind:contentBoxSize={
 			null,
 			([size]: ResizeObserverSize[]) => {
-				context.if_renderer((renderer) =>
-					resize_and_render(renderer, size.inlineSize, size.blockSize),
-				);
+				context.if_renderer((renderer) => {
+					resize_and_render(renderer, size.inlineSize, size.blockSize);
+				});
 			}
 		}
 		{@attach controls(orbit)}
@@ -145,7 +168,9 @@
 			const last = context.renderer;
 			context.renderer = renderer;
 
-			const on_change = () => render(renderer);
+			const on_change = () => {
+				render(renderer);
+			};
 
 			orbit.addEventListener("change", on_change);
 			return () => {

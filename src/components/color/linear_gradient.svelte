@@ -1,8 +1,6 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Bool, Color, Float } from "@/classes/controls/index";
 	import { Context } from "@/classes/renderer_context";
-	import { rotateUV, uv } from "three/tsl";
 	import {
 		checkbox_input,
 		color_input,
@@ -10,20 +8,21 @@
 	} from "@/components/controls.svelte";
 	import { create_renderer } from "@/attachments/create_renderer";
 	import { resize_renderer } from "@/functions/resize_renderer";
+	import { rotateUV, uniform, uv } from "three/tsl";
 
-	const color_a = new Color("#d8a521");
-	const color_b = new Color("#125a8d");
-	const degrees = new Float(45);
-	const saturate = new Bool(false);
+	const color_a = uniform(new three.Color("#d8a521"));
+	const color_b = uniform(new three.Color("#125a8d"));
+	const degrees = uniform(45);
+	const saturate = uniform(false);
 
-	const radians = degrees.node.remap(0, 100, 0, 360).radians();
+	const radians = degrees.remap(0, 100, 0, 360).radians();
 
 	const rx = rotateUV(uv(), radians).x;
 
-	const t = saturate.node.select(rx.saturate(), rx);
+	const t = saturate.select(rx.saturate(), rx);
 
 	const material = new three.MeshBasicNodeMaterial({
-		colorNode: t.mix(color_a.node, color_b.node),
+		colorNode: t.mix(color_a, color_b),
 	});
 
 	const quad = new three.QuadMesh(material);
@@ -42,23 +41,39 @@
 	<fieldset class="controls">
 		{@render color_input(
 			"color a",
-			() => color_a.value,
-			(value) => update(() => color_a.update(value)),
+			() => `#${color_a.value.getHexString()}`,
+			(value) => {
+				update(() => {
+					color_a.value.set(value);
+				});
+			},
 		)}
 		{@render color_input(
 			"color b",
-			() => color_b.value,
-			(value) => update(() => color_b.update(value)),
+			() => `#${color_b.value.getHexString()}`,
+			(value) => {
+				update(() => {
+					color_b.value.set(value);
+				});
+			},
 		)}
 		{@render range_input(
 			"degrees",
 			() => degrees.value,
-			(value) => update(() => degrees.update(value)),
+			(value) => {
+				update(() => {
+					degrees.value = value;
+				});
+			},
 		)}
 		{@render checkbox_input(
 			"saturate",
 			() => saturate.value,
-			(value) => update(() => saturate.update(value)),
+			(value) => {
+				update(() => {
+					saturate.value = value;
+				});
+			},
 		)}
 	</fieldset>
 
