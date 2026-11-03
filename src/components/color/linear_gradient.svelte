@@ -1,14 +1,13 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Context } from "@/classes/renderer_context";
 	import {
 		checkbox_input,
 		color_input,
 		range_input,
 	} from "@/components/controls.svelte";
-	import { create_renderer } from "@/attachments/create_renderer";
 	import { resize_renderer } from "@/functions/resize_renderer";
 	import { rotateUV, uniform, uv } from "three/tsl";
+	import { Context } from "@/classes/renderer_context";
 
 	const color_a = uniform(new three.Color("#d8a521"));
 	const color_b = uniform(new three.Color("#125a8d"));
@@ -28,13 +27,6 @@
 	const quad = new three.QuadMesh(material);
 
 	const context = new Context();
-
-	const render = (renderer: three.Renderer) => quad.render(renderer);
-
-	const update = (callback: () => void) => {
-		callback();
-		context.if_renderer(render);
-	};
 </script>
 
 <div class="relative">
@@ -43,36 +35,32 @@
 			"color a",
 			() => `#${color_a.value.getHexString()}`,
 			(value) => {
-				update(() => {
-					color_a.value.set(value);
-				});
+				color_a.value.set(value);
+				context.if_renderer((renderer) => quad.render(renderer));
 			},
 		)}
 		{@render color_input(
 			"color b",
 			() => `#${color_b.value.getHexString()}`,
 			(value) => {
-				update(() => {
-					color_b.value.set(value);
-				});
+				color_b.value.set(value);
+				context.if_renderer((renderer) => quad.render(renderer));
 			},
 		)}
 		{@render range_input(
 			"degrees",
 			() => degrees.value,
 			(value) => {
-				update(() => {
-					degrees.value = value;
-				});
+				degrees.value = value;
+				context.if_renderer((renderer) => quad.render(renderer));
 			},
 		)}
 		{@render checkbox_input(
 			"saturate",
 			() => saturate.value,
 			(value) => {
-				update(() => {
-					saturate.value = value;
-				});
+				saturate.value = value;
+				context.if_renderer((renderer) => quad.render(renderer));
 			},
 		)}
 	</fieldset>
@@ -84,20 +72,36 @@
 			([size]: ResizeObserverSize[]) => {
 				context.if_renderer((renderer) => {
 					resize_renderer(renderer, size.inlineSize, size.blockSize);
-					render(renderer);
+					quad.render(renderer);
 				});
 			}
 		}
-		{@attach create_renderer((renderer) => {
-			const canvas = renderer.domElement;
-			resize_renderer(renderer, canvas.clientWidth, canvas.clientHeight);
-			render(renderer);
-			const last = context.renderer;
-			context.renderer = renderer;
+		{@attach (canvas) => {
+			const init_renderer = new three.WebGPURenderer({
+				canvas,
+			})
+				.init()
+				.then((renderer) => {
+					resize_renderer(
+						renderer,
+						renderer.domElement.clientWidth,
+						renderer.domElement.clientHeight,
+					);
+					quad.render(renderer);
+
+					const last = context.renderer;
+					context.renderer = renderer;
+					return () => {
+						context.renderer = last;
+						renderer.dispose();
+					};
+				});
 			return () => {
-				context.renderer = last;
+				init_renderer.then((cleanup) => {
+					cleanup();
+				});
 			};
-		})}
+		}}
 	>
 	</canvas>
 </div>

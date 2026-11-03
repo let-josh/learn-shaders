@@ -1,16 +1,16 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-	import { Context } from "@/classes/renderer_context";
 	import {
 		checkbox_input,
 		color_input,
 		range_input,
 	} from "@/components/controls.svelte";
 	import { controls } from "@/attachments/controls";
-	import { create_renderer } from "@/attachments/create_renderer";
 	import { resize_renderer } from "@/functions/resize_renderer";
 	import { uniform, uv, vec2 } from "three/tsl";
+	import { update_camera_aspect } from "@/functions/update_camera_aspect";
+	import { Context } from "@/classes/renderer_context";
 
 	const scale = uniform(50);
 	const radius = uniform(50);
@@ -51,20 +51,9 @@
 		else quad.render(renderer);
 	};
 
-	const resize_and_render = (
-		renderer: three.Renderer,
-		width: number,
-		height: number,
-	) => {
+	const resize = (renderer: three.Renderer, width: number, height: number) => {
 		resize_renderer(renderer, width, height);
-		camera.aspect = width / height;
-		camera.updateProjectionMatrix();
-		render(renderer);
-	};
-
-	const update = (callback: () => void) => {
-		callback();
-		context.if_renderer(render);
+		update_camera_aspect(camera, width / height);
 	};
 </script>
 
@@ -74,51 +63,49 @@
 			"scale",
 			() => scale.value,
 			(value) => {
-				update(() => {
-					scale.value = value;
-				});
+				scale.value = value;
+				context.if_renderer(render);
 			},
 		)}
 		{@render range_input(
 			"radius",
 			() => radius.value,
 			(value) => {
-				update(() => {
-					radius.value = value;
-				});
+				radius.value = value;
+				context.if_renderer(render);
 			},
 		)}
 		{@render range_input(
 			"offset",
 			() => offset.value,
 			(value) => {
-				update(() => {
-					offset.value = value;
-				});
+				offset.value = value;
+				context.if_renderer(render);
 			},
 		)}
 		{@render color_input(
 			"dot color",
 			() => `#${dot_color.value.getHexString()}`,
 			(value) => {
-				update(() => {
-					dot_color.value.set(value);
-				});
+				dot_color.value.set(value);
+				context.if_renderer(render);
 			},
 		)}
 		{@render color_input(
 			"background color",
 			() => `#${background_color.value.getHexString()}`,
 			(value) => {
-				update(() => {
-					background_color.value.set(value);
-				});
+				background_color.value.set(value);
+				context.if_renderer(render);
 			},
 		)}
 		{@render checkbox_input(
 			"render scene",
 			() => orbit.enabled,
-			(value) => update(() => (orbit.enabled = value)),
+			(value) => {
+				orbit.enabled = value;
+				context.if_renderer(render);
+			},
 		)}
 	</fieldset>
 
@@ -128,27 +115,45 @@
 			null,
 			([size]: ResizeObserverSize[]) => {
 				context.if_renderer((renderer) => {
-					resize_and_render(renderer, size.inlineSize, size.blockSize);
+					resize(renderer, size.inlineSize, size.blockSize);
+					render(renderer);
 				});
 			}
 		}
 		{@attach controls(orbit)}
-		{@attach create_renderer((renderer) => {
-			const canvas = renderer.domElement;
-			resize_and_render(renderer, canvas.clientWidth, canvas.clientHeight);
-			const last = context.renderer;
-			context.renderer = renderer;
+		{@attach (canvas) => {
+			const init_renderer = new three.WebGPURenderer({
+				canvas,
+			})
+				.init()
+				.then((renderer) => {
+					resize(
+						renderer,
+						renderer.domElement.clientWidth,
+						renderer.domElement.clientHeight,
+					);
+					render(renderer);
 
-			const on_change = () => {
-				render(renderer);
-			};
+					const on_change = () => {
+						render(renderer);
+					};
 
-			orbit.addEventListener("change", on_change);
+					orbit.addEventListener("change", on_change);
+
+					const last = context.renderer;
+					context.renderer = renderer;
+					return () => {
+						orbit.removeEventListener("change", on_change);
+						context.renderer = last;
+						renderer.dispose();
+					};
+				});
 			return () => {
-				orbit.removeEventListener("change", on_change);
-				context.renderer = last;
+				init_renderer.then((cleanup) => {
+					cleanup();
+				});
 			};
-		})}
+		}}
 	>
 	</canvas>
 </div>

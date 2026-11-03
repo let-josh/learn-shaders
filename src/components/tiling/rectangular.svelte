@@ -1,7 +1,6 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
 	import { Context } from "@/classes/renderer_context";
-	import { create_renderer } from "@/attachments/create_renderer";
 	import { range_input } from "@/components/controls.svelte";
 	import { resize_renderer } from "@/functions/resize_renderer";
 	import { uniform, uv } from "three/tsl";
@@ -14,17 +13,6 @@
 			.fract(),
 	});
 	const quad = new three.QuadMesh(material);
-
-	const render = (renderer: three.Renderer) => quad.render(renderer);
-
-	const resize_and_render = (
-		renderer: three.Renderer,
-		width: number,
-		height: number,
-	) => {
-		resize_renderer(renderer, width, height);
-		render(renderer);
-	};
 
 	const context = new Context();
 </script>
@@ -47,19 +35,37 @@
 			null,
 			([size]: ResizeObserverSize[]) => {
 				context.if_renderer((renderer) => {
-					resize_and_render(renderer, size.inlineSize, size.blockSize);
+					resize_renderer(renderer, size.inlineSize, size.blockSize);
+					quad.render(renderer);
 				});
 			}
 		}
-		{@attach create_renderer((renderer) => {
-			const canvas = renderer.domElement;
-			resize_and_render(renderer, canvas.clientWidth, canvas.clientHeight);
-			const last = context.renderer;
-			context.renderer = renderer;
+		{@attach (canvas) => {
+			const init_renderer = new three.WebGPURenderer({
+				canvas,
+			})
+				.init()
+				.then((renderer) => {
+					resize_renderer(
+						renderer,
+						renderer.domElement.clientWidth,
+						renderer.domElement.clientHeight,
+					);
+					quad.render(renderer);
+
+					const last = context.renderer;
+					context.renderer = renderer;
+					return () => {
+						context.renderer = last;
+						renderer.dispose();
+					};
+				});
 			return () => {
-				context.renderer = last;
+				init_renderer.then((cleanup) => {
+					cleanup();
+				});
 			};
-		})}
+		}}
 	>
 	</canvas>
 </div>

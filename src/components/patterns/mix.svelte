@@ -1,16 +1,16 @@
 <script lang="ts">
 	import * as three from "three/webgpu";
-	import { Context } from "@/classes/renderer_context";
 	import {
 		checkbox_input,
 		color_input,
 		range_input,
 	} from "@/components/controls.svelte";
-	import { create_renderer } from "@/attachments/create_renderer";
 	import { uniform, uv } from "three/tsl";
 	import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 	import { controls } from "@/attachments/controls";
 	import { resize_renderer } from "@/functions/resize_renderer";
+	import { update_camera_aspect } from "@/functions/update_camera_aspect";
+	import { Context } from "@/classes/renderer_context";
 
 	const transformed_uv = uv().sub(0.5);
 
@@ -41,27 +41,16 @@
 	const orbit = new OrbitControls(camera);
 	orbit.enabled = false;
 
+	const context = new Context();
+
 	const render = (renderer: three.Renderer) => {
 		if (orbit.enabled) renderer.render(mesh, camera);
 		else quad.render(renderer);
 	};
 
-	const context = new Context();
-
-	const resize_and_render = (
-		renderer: three.Renderer,
-		width: number,
-		height: number,
-	) => {
+	const resize = (renderer: three.Renderer, width: number, height: number) => {
 		resize_renderer(renderer, width, height);
-		camera.aspect = width / height;
-		camera.updateProjectionMatrix();
-		render(renderer);
-	};
-
-	const update = (callback: () => void) => {
-		callback();
-		context.if_renderer(render);
+		update_camera_aspect(camera, width / height);
 	};
 </script>
 
@@ -71,54 +60,48 @@
 			"frequency",
 			() => frequency.value,
 			(value) => {
-				update(() => {
-					frequency.value = value;
-				});
+				frequency.value = value;
+				context.if_renderer(render);
 			},
 		)}
 		{@render range_input(
 			"edge",
 			() => edge.value,
 			(value) => {
-				update(() => {
-					edge.value = value;
-				});
+				edge.value = value;
+				context.if_renderer(render);
 			},
 		)}
 		{@render range_input(
 			"mix",
 			() => mix.value,
 			(value) => {
-				update(() => {
-					mix.value = value;
-				});
+				mix.value = value;
+				context.if_renderer(render);
 			},
 		)}
 		{@render color_input(
 			"color a",
 			() => `#${color_a.value.getHexString()}`,
 			(value) => {
-				update(() => {
-					color_a.value.set(value);
-				});
+				color_a.value.set(value);
+				context.if_renderer(render);
 			},
 		)}
 		{@render color_input(
 			"color b",
 			() => `#${color_b.value.getHexString()}`,
 			(value) => {
-				update(() => {
-					color_b.value.set(value);
-				});
+				color_b.value.set(value);
+				context.if_renderer(render);
 			},
 		)}
 		{@render checkbox_input(
 			"render scene",
 			() => orbit.enabled,
 			(value) => {
-				update(() => {
-					orbit.enabled = value;
-				});
+				orbit.enabled = value;
+				context.if_renderer(render);
 			},
 		)}
 	</fieldset>
@@ -129,27 +112,44 @@
 			null,
 			([size]: ResizeObserverSize[]) => {
 				context.if_renderer((renderer) => {
-					resize_and_render(renderer, size.inlineSize, size.blockSize);
+					resize(renderer, size.inlineSize, size.blockSize);
+					render(renderer);
 				});
 			}
 		}
 		{@attach controls(orbit)}
-		{@attach create_renderer((renderer) => {
-			const canvas = renderer.domElement;
-			resize_and_render(renderer, canvas.clientWidth, canvas.clientHeight);
-			const last = context.renderer;
-			context.renderer = renderer;
+		{@attach (canvas) => {
+			const init_renderer = new three.WebGPURenderer({
+				canvas,
+			})
+				.init()
+				.then((renderer) => {
+					resize(
+						renderer,
+						renderer.domElement.clientWidth,
+						renderer.domElement.clientHeight,
+					);
+					render(renderer);
 
-			const on_change = () => {
-				render(renderer);
-			};
+					const on_change = () => {
+						render(renderer);
+					};
 
-			orbit.addEventListener("change", on_change);
+					orbit.addEventListener("change", on_change);
+					const last = context.renderer;
+					context.renderer = renderer;
+					return () => {
+						orbit.removeEventListener("change", on_change);
+						context.renderer = last;
+						renderer.dispose();
+					};
+				});
 			return () => {
-				orbit.removeEventListener("change", on_change);
-				context.renderer = last;
+				init_renderer.then((cleanup) => {
+					cleanup();
+				});
 			};
-		})}
+		}}
 	>
 	</canvas>
 </div>

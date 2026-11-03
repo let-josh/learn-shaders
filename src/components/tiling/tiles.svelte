@@ -4,9 +4,9 @@
 	import { Context } from "@/classes/renderer_context";
 	import { checkbox_input, range_input } from "@/components/controls.svelte";
 	import { controls } from "@/attachments/controls";
-	import { create_renderer } from "@/attachments/create_renderer";
 	import { resize_renderer } from "@/functions/resize_renderer";
 	import { uniform, uv, vec3 } from "three/tsl";
+	import { update_camera_aspect } from "@/functions/update_camera_aspect";
 
 	const scale = uniform(50);
 	const blue = uniform(50);
@@ -36,20 +36,9 @@
 
 	const context = new Context();
 
-	const resize_and_render = (
-		renderer: three.Renderer,
-		width: number,
-		height: number,
-	) => {
+	const resize = (renderer: three.Renderer, width: number, height: number) => {
 		resize_renderer(renderer, width, height);
-		camera.aspect = width / height;
-		camera.updateProjectionMatrix();
-		render(renderer);
-	};
-
-	const update = (callback: () => void) => {
-		callback();
-		context.if_renderer(render);
+		update_camera_aspect(camera, width / height);
 	};
 </script>
 
@@ -59,27 +48,24 @@
 			"scale",
 			() => scale.value,
 			(value) => {
-				update(() => {
-					scale.value = value;
-				});
+				scale.value = value;
+				context.if_renderer(render);
 			},
 		)}
 		{@render range_input(
 			"blue",
 			() => blue.value,
 			(value) => {
-				update(() => {
-					blue.value = value;
-				});
+				blue.value = value;
+				context.if_renderer(render);
 			},
 		)}
 		{@render checkbox_input(
 			"render scene",
 			() => orbit.enabled,
 			(value) => {
-				update(() => {
-					orbit.enabled = value;
-				});
+				orbit.enabled = value;
+				context.if_renderer(render);
 			},
 		)}
 	</fieldset>
@@ -90,27 +76,45 @@
 			null,
 			([size]: ResizeObserverSize[]) => {
 				context.if_renderer((renderer) => {
-					resize_and_render(renderer, size.inlineSize, size.blockSize);
+					resize(renderer, size.inlineSize, size.blockSize);
+					render(renderer);
 				});
 			}
 		}
 		{@attach controls(orbit)}
-		{@attach create_renderer((renderer) => {
-			const canvas = renderer.domElement;
-			resize_and_render(renderer, canvas.clientWidth, canvas.clientHeight);
-			const last = context.renderer;
-			context.renderer = renderer;
+		{@attach (canvas) => {
+			const init_renderer = new three.WebGPURenderer({
+				canvas,
+			})
+				.init()
+				.then((renderer) => {
+					resize(
+						renderer,
+						renderer.domElement.clientWidth,
+						renderer.domElement.clientHeight,
+					);
+					render(renderer);
 
-			const on_change = () => {
-				render(renderer);
-			};
+					const on_change = () => {
+						render(renderer);
+					};
 
-			orbit.addEventListener("change", on_change);
+					orbit.addEventListener("change", on_change);
+
+					const last = context.renderer;
+					context.renderer = renderer;
+					return () => {
+						orbit.removeEventListener("change", on_change);
+						context.renderer = last;
+						renderer.dispose();
+					};
+				});
 			return () => {
-				orbit.removeEventListener("change", on_change);
-				context.renderer = last;
+				init_renderer.then((cleanup) => {
+					cleanup();
+				});
 			};
-		})}
+		}}
 	>
 	</canvas>
 </div>
